@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CommonLab — Free Science Simulations for Everyone</title>
+    <meta name="description" content="CommonLab delivers free, browser-based physics and chemistry lab simulations for underserved schools and homeschooled students without access to high-tech lab equipment.">
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <header class="site-header">
+        <div class="container nav-container">
+            <a href="/" class="logo" aria-label="CommonLab Home">
+                <span class="logo-icon">&#9670;</span>
+                <span class="logo-text">CommonLab</span>
+            </a>
+            <nav class="primary-nav" aria-label="Main navigation">
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#goals">Goals</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#simulations">Simulations</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- Hero / Logo Area -->
+        <section class="hero section">
+            <div class="container hero-content">
+                <div class="hero-logo">
+                    <span class="hero-logo-icon">&#9670;</span>
+                </div>
+                <h1>CommonLab</h1>
+                <p class="hero-subtitle">
+                    Free, browser-based physics and chemistry lab simulations
+                    for schools and students without access to lab equipment.
+                </p>
+                <a href="#simulations" class="btn btn-primary">Explore Simulations</a>
+            </div>
+        </section>
+
+        <!-- About / Mission -->
+        <section id="about" class="section section-alt">
+            <div class="container">
+                <h2 class="section-title">Our Mission</h2>
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-icon">&#9672;</div>
+                        <h3>Equity in Science</h3>
+                        <p>
+                            Every student deserves hands-on science learning, regardless of
+                            their school's budget. CommonLab brings the lab to any device
+                            with a browser.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">&#9672;</div>
+                        <h3>For Homeschoolers Too</h3>
+                        <p>
+                            Homeschooled students often lack access to lab equipment. Our
+                            simulations fill that gap with safe, repeatable experiments.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">&#9672;</div>
+                        <h3>Real Science, Real Learning</h3>
+                        <p>
+                            Built on accurate physics engines and chemical models &mdash;
+                            not animations &mdash; so students learn genuine scientific principles.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Project Goals -->
+        <section id="goals" class="section">
+            <div class="container">
+                <h2 class="section-title">Project Goals</h2>
+                <ul class="goals-list">
+                    <li>
+                        <span class="goal-number">01</span>
+                        <div class="goal-content">
+                            <h3>Accessible to All</h3>
+                            <p>Zero cost, zero login. Open a browser and start experimenting. Works on low-end devices and slow connections.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="goal-number">02</span>
+                        <div class="goal-content">
+                            <h3>Curriculum-Aligned</h3>
+                            <p>Simulations map to standard high-school and introductory college physics and chemistry curricula.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="goal-number">03</span>
+                        <div class="goal-content">
+                            <h3>No Install, No Setup</h3>
+                            <p>Everything runs in the browser. No apps, no downloads, no IT support needed.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="goal-number">04</span>
+                        <div class="goal-content">
+                            <h3>Open and Free Forever</h3>
+                            <p>Built with open web standards. No paywalls, no ads, no data collection.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section id="features" class="section section-alt">
+            <div class="container">
+                <h2 class="section-title">Features</h2>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>Works Everywhere</h3>
+                        <p>Desktop, tablet, phone &mdash; even Chromebooks. No special hardware required. Works on low-end devices.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Real-Time Physics</h3>
+                        <p>Physics simulations run at 60 fps with accurate numerical integration and real-time feedback.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Interactive Chemistry</h3>
+                        <p>Mix reagents, observe reactions, and measure outcomes interactively. Safe and repeatable experiments.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Data Export</h3>
+                        <p>Export measurements and graphs for lab reports and analysis. Supports CSV and chart downloads.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Offline Ready</h3>
+                        <p>Once loaded, many simulations work without an internet connection. No backend dependencies.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Accessible</h3>
+                        <p>Keyboard-navigable, screen-reader friendly, and high-contrast themes for inclusive learning.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Simulations Overview -->
+        <section id="simulations" class="section">
+            <div class="container">
+                <h2 class="section-title">Simulations</h2>
+                <p class="section-intro">
+                    Click a simulation to launch it. Each one is a self-contained
+                    interactive lab built with vanilla JavaScript.
+                </p>
+                <div class="sim-grid">
+                    <a href="simulations/pendulum.html" class="sim-card">
+                        <span class="sim-name">Pendulum Lab</span>
+                        <span class="sim-desc">Explore period, amplitude, and gravity with an interactive pendulum with adjustable parameters.</span>
+                        <span class="sim-tag physics">Physics</span>
+                    </a>
+                    <a href="simulations/circuits.html" class="sim-card">
+                        <span class="sim-name">Circuit Builder</span>
+                        <span class="sim-desc">Build series and parallel circuits. Measure voltage, current, and resistance.</span>
+                        <span class="sim-tag physics">Physics</span>
+                    </a>
+                    <a href="simulations/projectile.html" class="sim-card">
+                        <span class="sim-name">Projectile Motion</span>
+                        <span class="sim-desc">Launch projectiles at various angles and speeds. Track trajectory and range.</span>
+                        <span class="sim-tag physics">Physics</span>
+                    </a>
+                    <a href="simulations/titration.html" class="sim-card">
+                        <span class="sim-name">Titration Lab</span>
+                        <span class="sim-desc">Perform acid-base titrations. Track pH and find equivalence points.</span>
+                        <span class="sim-tag chemistry">Chemistry</span>
+                    </a>
+                    <a href="simulations/gas-laws.html" class="sim-card">
+                        <span class="sim-name">Gas Laws</span>
+                        <span class="sim-desc">Manipulate pressure, volume, and temperature of an ideal gas in real time.</span>
+                        <span class="sim-tag chemistry">Chemistry</span>
+                    </a>
+                    <a href="simulations/states-of-matter.html" class="sim-card">
+                        <span class="sim-name">States of Matter</span>
+                        <span class="sim-desc">Heat and cool substances. Observe phase changes at the molecular level.</span>
+                        <span class="sim-tag chemistry">Chemistry</span>
+                    </a>
+                    <a href="simulations/build-a-nucleus.html" class="sim-card">
+                        <span class="sim-name">Build a Nucleus</span>
+                        <span class="sim-desc">Add protons and neutrons to build atomic nuclei. Explore stability and the chart of nuclides.</span>
+                        <span class="sim-tag physics">Physics</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact -->
+        <section id="contact" class="section section-alt">
+            <div class="container contact-content">
+                <h2 class="section-title">Get In Touch</h2>
+                <p class="contact-intro">
+                    Is your school or organization interested in using CommonLab?
+                    Have a suggestion for a new simulation? We'd love to hear from you.
+                </p>
+                <div class="contact-links">
+                    <a href="mailto:hello@commonlab.org" class="contact-item">
+                        <span class="contact-icon">&#9993;</span>
+                        hello@commonlab.org
+                    </a>
+                    <a href="#" class="contact-item">
+                        <span class="contact-icon">&#9670;</span>
+                        GitHub
+                    </a>
+                    <a href="#" class="contact-item">
+                        <span class="contact-icon">&#9670;</span>
+                        X / Twitter
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 CommonLab. Free science simulations for everyone.</p>
+        </div>
+    </footer>
+
+    <script src="index.js"></script>
+</body>
+</html>
