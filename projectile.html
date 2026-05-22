@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projectile Motion — CommonLab</title>
+    <meta name="description" content="Launch projectiles in an interactive sandbox. Drag the cannon, adjust angle and velocity.">
+    <link rel="stylesheet" href="../main.css">
+    <style>
+        .proj-canvas-wrap {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 0.75rem;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            position: relative;
+        }
+
+        #projCanvas {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            aspect-ratio: 800 / 500;
+            display: block;
+            border-radius: 8px;
+            background: #f7f3ee;
+            cursor: default;
+            touch-action: none;
+        }
+
+        .proj-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+        }
+
+        .proj-controls-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .proj-controls-row .ctrl-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            min-width: 18px;
+            flex-shrink: 0;
+        }
+
+        .proj-controls-row input[type="range"] {
+            flex: 1;
+            min-width: 60px;
+            accent-color: #4a6fa5;
+            height: 6px;
+            cursor: pointer;
+        }
+
+        .proj-controls-row .ctrl-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            min-width: 72px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+        }
+
+        .proj-button-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            padding-top: 0.5rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .proj-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .proj-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .proj-btn:active {
+            transform: translateY(0);
+        }
+
+        .proj-btn-launch {
+            background: #4a6fa5;
+            color: #ffffff;
+        }
+
+        .proj-btn-launch:hover {
+            background: #3b5d8f;
+        }
+
+        .proj-btn-clear {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .proj-btn-clear:hover {
+            background: #d1d5db;
+        }
+
+        .proj-btn-zoom {
+            background: #f0f4fa;
+            color: #4a6fa5;
+            padding: 0.5rem 0.8rem;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .proj-btn-zoom:hover {
+            background: #dbeafe;
+        }
+
+        .proj-btn-zoom:disabled {
+            opacity: 0.4;
+            cursor: default;
+            transform: none;
+        }
+
+        .zoom-indicator {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6c757d;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .proj-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.6rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .proj-stat {
+            text-align: center;
+            padding: 0.4rem 0.2rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .proj-stat .stat-num {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .proj-stat .stat-label {
+            font-size: 0.65rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .proj-stat.highlight .stat-num {
+            color: #4a6fa5;
+        }
+
+        /* ── MCQ Section ── */
+        .mcq-section {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            margin-top: 1.5rem;
+        }
+
+        .mcq-section h2 {
+            font-size: 1.2rem;
+            color: #1a1a2e;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .mcq-section h2 + p {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin: 0 0 1.25rem 0;
+        }
+
+        .mcq-question {
+            margin-bottom: 1.25rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .mcq-question:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .mcq-qtext {
+            font-weight: 600;
+            color: #1a1a2e;
+            font-size: 0.95rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .mcq-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .mcq-option {
+            padding: 0.45rem 1rem;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            background: #f8f9fa;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.12s;
+            user-select: none;
+        }
+
+        .mcq-option:hover {
+            background: #e9ecef;
+            border-color: #4a6fa5;
+        }
+
+        .mcq-option.selected {
+            border-color: #4a6fa5;
+            background: #e8f0fe;
+            color: #2c4d7a;
+        }
+
+        .mcq-option.correct {
+            border-color: #2d7d46;
+            background: #e6f4ea;
+            color: #1e5e33;
+        }
+
+        .mcq-option.incorrect {
+            border-color: #c5221f;
+            background: #fce8e6;
+            color: #8b1a18;
+        }
+
+        .mcq-feedback {
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .mcq-feedback.show {
+            display: block;
+        }
+
+        .mcq-feedback.fb-correct {
+            background: #e6f4ea;
+            color: #1e5e33;
+            border-left: 3px solid #2d7d46;
+        }
+
+        .mcq-feedback.fb-incorrect {
+            background: #fce8e6;
+            color: #8b1a18;
+            border-left: 3px solid #c5221f;
+        }
+
+        @media (max-width: 768px) {
+            .proj-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .mcq-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container nav-container">
+            <a href="../index.html" class="logo" aria-label="CommonLab Home">
+                <span class="logo-icon">&#9670;</span>
+                <span class="logo-text">CommonLab</span>
+            </a>
+            <nav class="primary-nav" aria-label="Main navigation">
+                <ul>
+                    <li><a href="../index.html#simulations">Simulations</a></li>
+                    <li><a href="../index.html#about">About</a></li>
+                    <li><a href="../index.html#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="sim-page-header">
+            <div class="container">
+                <h1>Projectile Motion</h1>
+                <p>Launch a cannonball and explore projectile motion. Drag the cannon to reposition it, adjust angle and velocity, and watch the trajectory.</p>
+            </div>
+        </div>
+
+        <section class="sim-canvas-area">
+            <div class="container sim-layout">
+
+                <div class="sim-main">
+                    <div class="proj-canvas-wrap">
+                        <canvas id="projCanvas" width="800" height="500"></canvas>
+                    </div>
+
+                    <div class="proj-controls">
+                        <div class="proj-controls-row">
+                            <span class="ctrl-label">&#952;</span>
+                            <input type="range" id="angleSlider" min="0" max="90" value="45" step="1">
+                            <span class="ctrl-value" id="angleValue">45&deg;</span>
+                        </div>
+                        <div class="proj-controls-row">
+                            <span class="ctrl-label">v</span>
+                            <input type="range" id="velSlider" min="1" max="60" value="20" step="0.5">
+                            <span class="ctrl-value" id="velValue">20.0 m/s</span>
+                        </div>
+                        <div class="proj-controls-row">
+                            <span class="ctrl-label">h</span>
+                            <input type="range" id="heightSlider" min="0" max="40" value="0" step="0.5">
+                            <span class="ctrl-value" id="heightValue">0.0 m</span>
+                        </div>
+
+                        <div class="proj-button-row">
+                            <button class="proj-btn proj-btn-launch" id="launchBtn">Launch</button>
+                            <button class="proj-btn proj-btn-clear" id="clearBtn">Clear</button>
+                            <div style="flex:1"></div>
+                            <button class="proj-btn proj-btn-zoom" id="zoomOutBtn">&minus;</button>
+                            <span class="zoom-indicator" id="zoomDisplay">1.00x</span>
+                            <button class="proj-btn proj-btn-zoom" id="zoomInBtn">+</button>
+                        </div>
+
+                        <div class="proj-stats">
+                            <div class="proj-stat highlight">
+                                <div class="stat-num" id="statRange">--</div>
+                                <div class="stat-label">Range (m)</div>
+                            </div>
+                            <div class="proj-stat highlight">
+                                <div class="stat-num" id="statMaxH">--</div>
+                                <div class="stat-label">Max Height (m)</div>
+                            </div>
+                            <div class="proj-stat highlight">
+                                <div class="stat-num" id="statTime">--</div>
+                                <div class="stat-label">Time (s)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="sim-sidebar">
+                    <div class="equation-card">
+                        <h3>Equations of Motion</h3>
+                        <div class="equation-formula">x = x<sub>0</sub> + v<sub>x</sub>t</div>
+                        <div class="equation-formula" style="margin-top:0.3rem;">y = y<sub>0</sub> + v<sub>y</sub>t &minus; &frac12;gt<sup>2</sup></div>
+                        <p class="eq-explanation" style="margin-top:0.5rem;">
+                            Horizontal motion is constant velocity. Vertical motion is
+                            constant acceleration due to gravity (g = 9.8 m/s&sup2;).
+                        </p>
+                    </div>
+                    <div class="equation-card">
+                        <h3>Components</h3>
+                        <div class="equation-formula">v<sub>x</sub> = v cos(&#952;)</div>
+                        <div class="equation-formula" style="margin-top:0.3rem;">v<sub>y</sub> = v sin(&#952;)</div>
+                        <p class="eq-explanation" style="margin-top:0.5rem;">
+                            The initial velocity vector is split into horizontal and
+                            vertical components using the launch angle.
+                        </p>
+                    </div>
+                    <div class="equation-card">
+                        <h3>Key Quantities</h3>
+                        <p class="eq-explanation">
+                            <strong>Range</strong> = (v&sup2; sin(2&#952;)) / g (level ground)<br>
+                            <strong>Max height</strong> = y<sub>0</sub> + (v<sub>y</sub>&sup2;) / (2g)<br>
+                            <strong>Time of flight</strong> depends on launch height and vertical velocity.
+                        </p>
+                    </div>
+                    <div class="equation-card">
+                        <h3>Tips</h3>
+                        <p class="eq-explanation">
+                            Drag the cannon anywhere on the canvas. Change the angle
+                            to see how 45&deg; gives the longest range on level ground.
+                            Add height to clear obstacles.
+                        </p>
+                    </div>
+                </aside>
+
+            </div>
+        </section>
+
+        <!-- ── MCQ Section ── -->
+        <section>
+            <div class="container">
+                <div class="mcq-section">
+                    <h2>Check Your Understanding</h2>
+                    <p>Test your knowledge of projectile motion. Click an answer to see feedback.</p>
+
+                    <!-- Q1 -->
+                    <div class="mcq-question" data-qid="0">
+                        <div class="mcq-qtext">1. On level ground, a projectile launched at 60&deg; has the same range as one launched at which angle?</div>
+                        <div class="mcq-options">
+                            <button class="mcq-option" data-value="a">15&deg;</button>
+                            <button class="mcq-option" data-value="b">30&deg;</button>
+                            <button class="mcq-option" data-value="c">45&deg;</button>
+                            <button class="mcq-option" data-value="d">75&deg;</button>
+                        </div>
+                        <div class="mcq-feedback" data-correct="b">
+                            <strong>30&deg;</strong> &mdash; Correct! Complementary angles (summing to 90&deg;) produce the same range on level ground. 60&deg; + 30&deg; = 90&deg;, so they have equal range.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="a">
+                            Not quite. 15&deg; and 60&deg; do not sum to 90&deg;. Try thinking about complementary angles that add up to 90&deg;.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="c">
+                            Close! 45&deg; gives the <em>maximum</em> range, but it's not the complement of 60&deg;. 60&deg; + 30&deg; = 90&deg;.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="d">
+                            Not quite. 75&deg; and 60&deg; sum to 135&deg;, not 90&deg;. Complementary angles (sum = 90&deg;) have the same range.
+                        </div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="mcq-question" data-qid="1">
+                        <div class="mcq-qtext">2. If you double the launch velocity (keeping the same angle and height), the range will:</div>
+                        <div class="mcq-options">
+                            <button class="mcq-option" data-value="a">Double</button>
+                            <button class="mcq-option" data-value="b">Quadruple</button>
+                            <button class="mcq-option" data-value="c">Stay the same</button>
+                            <button class="mcq-option" data-value="d">Increase by half</button>
+                        </div>
+                        <div class="mcq-feedback" data-correct="b">
+                            <strong>Quadruple</strong> &mdash; Correct! Range &prop; v&sup2; (R = v&sup2; sin(2&theta;) / g). Doubling v makes R four times larger.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="a">
+                            Almost! Range is proportional to v&sup2;, not v. Try again: what is 2&sup2;?
+                        </div>
+                        <div class="mcq-feedback" data-wrong="c">
+                            Not quite. Velocity is a key factor in the range equation. Think about what happens when you square a doubled number.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="d">
+                            Not quite. Range scales with the square of velocity (v&sup2;). Doubling v means the range gets multiplied by 2&sup2; = 4.
+                        </div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="mcq-question" data-qid="2">
+                        <div class="mcq-qtext">3. What happens to the time of flight if you increase the launch height (keeping angle and speed the same)?</div>
+                        <div class="mcq-options">
+                            <button class="mcq-option" data-value="a">It increases</button>
+                            <button class="mcq-option" data-value="b">It decreases</button>
+                            <button class="mcq-option" data-value="c">It stays the same</button>
+                            <button class="mcq-option" data-value="d">It depends on the angle</button>
+                        </div>
+                        <div class="mcq-feedback" data-correct="a">
+                            <strong>It increases</strong> &mdash; Correct! A higher launch point means the projectile has farther to fall to reach the ground, so it stays in the air longer.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="b">
+                            Actually, it's the opposite. Think about it: if you throw a ball from a higher platform, does it land sooner or later?
+                        </div>
+                        <div class="mcq-feedback" data-wrong="c">
+                            Not quite. The vertical motion equation is y = y&#8320; + v<sub>y</sub>t - &frac12;gt&sup2;. A larger y&#8320; means it takes more time for y to reach 0.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="d">
+                            The effect is consistent regardless of angle &mdash; more height always means more time. But the <em>amount</em> of increase does depend on vertical velocity!
+                        </div>
+                    </div>
+
+                    <!-- Q4 -->
+                    <div class="mcq-question" data-qid="3">
+                        <div class="mcq-qtext">4. At what launch angle are the horizontal and vertical components of velocity equal (ignoring the sign)?</div>
+                        <div class="mcq-options">
+                            <button class="mcq-option" data-value="a">30&deg;</button>
+                            <button class="mcq-option" data-value="b">45&deg;</button>
+                            <button class="mcq-option" data-value="c">60&deg;</button>
+                            <button class="mcq-option" data-value="d">90&deg;</button>
+                        </div>
+                        <div class="mcq-feedback" data-correct="b">
+                            <strong>45&deg;</strong> &mdash; Correct! At 45&deg;, cos(45&deg;) = sin(45&deg;) = &radic;2/2, so v<sub>x</sub> = v cos(&theta;) = v sin(&theta;) = v<sub>y</sub>.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="a">
+                            Not quite. At 30&deg;, cos(30&deg;) &asymp; 0.866 and sin(30&deg;) = 0.5. These aren't equal. Try the angle where sin and cos are the same.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="c">
+                            Not quite. At 60&deg;, cos(60&deg;) = 0.5 and sin(60&deg;) &asymp; 0.866. These aren't equal. Try the angle where sin and cos are the same.
+                        </div>
+                        <div class="mcq-feedback" data-wrong="d">
+                            At 90&deg;, cos(90&deg;) = 0 and sin(90&deg;) = 1. There's no horizontal velocity at all! Try the angle where sin and cos are equal.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="container" style="margin-top:1.5rem;text-align:center;">
+            <a href="../index.html#simulations" class="sim-back-link">Back to Simulations</a>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 CommonLab. Free science simulations for everyone.</p>
+        </div>
+    </footer>
+
+    <script src="../index.js"></script>
+<script>
+    'use strict';
+
+    // ── Constants ──
+    const G = 9.8;
+    const BASE_SCALE = 18;
+    const GROUND_Y_CANVAS = 470;
+
+    // Fixed cannon dimensions (screen pixels, never zoom)
+    const CANNON_BODY_W = 15;
+    const CANNON_BODY_H = 7;
+    const CANNON_WHEEL_R = 5;
+    const CANNON_BARREL_LEN = 18;
+    const CANNON_BARREL_W = 5;
+
+    // Fixed target radius (screen pixels)
+    const TARGET_RADIUS_PX = 12;
+    const TARGET_COUNT = 4;
+
+    // ── Fixed camera (never changes) ──
+    const cameraWorldX = -5;
+
+    // ── State ──
+    let angle = 45;
+    let velocity = 20;
+    let height = 0;
+    let zoom = 1.0;
+    let cannonWorldX = 6;
+    let simState = 'idle';
+
+    // Projectile
+    let projX = 0, projY = 0, projVx = 0, projVy = 0, projTime = 0;
+    let trail = [];
+    let resultRange = null, resultMaxH = null, resultTime = null, projMaxY = 0;
+
+    // Targets: {x, hit, flashTimer, hitPopupTimer, hitPopupY, particles}
+    let targets = [];
+    let score = 0;
+
+    // Drag
+    let dragging = null;          // 'cannon' | number (target index) | null
+    let dragStartX = 0, dragStartY = 0;
+    let dragStartWorldX = 0, dragStartWorldY = 0;
+
+    // ── DOM ──
+    const canvas = document.getElementById('projCanvas');
+    const ctx = canvas.getContext('2d');
+    const angleSlider  = document.getElementById('angleSlider');
+    const velSlider    = document.getElementById('velSlider');
+    const heightSlider = document.getElementById('heightSlider');
+    const launchBtn    = document.getElementById('launchBtn');
+    const clearBtn     = document.getElementById('clearBtn');
+    const zoomInBtn    = document.getElementById('zoomInBtn');
+    const zoomOutBtn   = document.getElementById('zoomOutBtn');
+    const angleValue   = document.getElementById('angleValue');
+    const velValue     = document.getElementById('velValue');
+    const heightValue  = document.getElementById('heightValue');
+    const zoomDisplay  = document.getElementById('zoomDisplay');
+    const statRange = document.getElementById('statRange');
+    const statMaxH  = document.getElementById('statMaxH');
+    const statTime  = document.getElementById('statTime');
+
+    // ── Targets ──
+    function generateTargets() {
+        targets = [];
+        for (let i = 0; i < TARGET_COUNT; i++) {
+            targets.push({
+                x: 10 + Math.random() * 30,
+                hit: false,
+                flashTimer: 0,
+                hitPopupTimer: 0,
+                hitPopupY: 0,
+                particles: []
+            });
+        }
+        score = 0;
+    }
+
+    function spawnHitEffect(t) {
+        t.flashTimer = 0.4;
+        t.hitPopupTimer = 0.8;
+        t.hitPopupY = 0;
+        for (let i = 0; i < 12; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const spd = 40 + Math.random() * 80;
+            t.particles.push({
+                x: 0, y: 0,
+                vx: Math.cos(a) * spd,
+                vy: Math.sin(a) * spd - 20,
+                life: 0.3 + Math.random() * 0.3,
+                r: 1 + Math.random() * 2.5
+            });
+        }
+    }
+
+    // ── Geometry ──
+    function getScale() { return BASE_SCALE * zoom; }
+
+    function worldToScreen(wx, wy) {
+        const s = getScale();
+        return {
+            x: (wx - cameraWorldX) * s,
+            y: GROUND_Y_CANVAS - wy * s
+        };
+    }
+
+    // ── Drawing ──
+    function draw() {
+        const W = canvas.width, H = canvas.height;
+        const s = getScale();
+        ctx.clearRect(0, 0, W, H);
+
+        // Background
+        ctx.fillStyle = '#f7f3ee';
+        ctx.fillRect(0, 0, W, GROUND_Y_CANVAS);
+
+        // Grid
+        drawGrid(W, s);
+
+        // Table surface
+        ctx.fillStyle = '#c4a46c';
+        ctx.fillRect(0, GROUND_Y_CANVAS, W, H - GROUND_Y_CANVAS);
+        ctx.fillStyle = '#9e7e4a';
+        ctx.fillRect(0, GROUND_Y_CANVAS, W, 3);
+        ctx.strokeStyle = 'rgba(160,130,90,0.2)'; ctx.lineWidth = 1;
+        for (let gy = GROUND_Y_CANVAS + 20; gy < H; gy += 18) {
+            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+        }
+        const wr2 = cameraWorldX + W / s;
+        const TARGET_PX2 = 50;
+        const tableMinorX = niceStep(TARGET_PX2 / s) / 5;
+        const startTx = Math.floor(cameraWorldX / tableMinorX) * tableMinorX;
+        ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 0.5;
+        for (let gx = startTx; gx < wr2; gx += tableMinorX) {
+            const sx = (gx - cameraWorldX) * s;
+            ctx.beginPath(); ctx.moveTo(sx, GROUND_Y_CANVAS); ctx.lineTo(sx, H); ctx.stroke();
+        }
+
+        // Targets
+        targets.forEach(function(t) { drawTarget(t); });
+
+        // Trail
+        if (trail.length > 1) {
+            ctx.strokeStyle = '#e05252'; ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < trail.length; i++) {
+                const sp = worldToScreen(trail[i].x, trail[i].y);
+                i === 0 ? ctx.moveTo(sp.x, sp.y) : ctx.lineTo(sp.x, sp.y);
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#e05252';
+            const ds = Math.max(1, Math.floor(trail.length / 40));
+            for (let i = 0; i < trail.length; i += ds) {
+                const sp = worldToScreen(trail[i].x, trail[i].y);
+                ctx.beginPath(); ctx.arc(sp.x, sp.y, 2.5, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        // Projectile
+        if (simState === 'flying') {
+            const sp = worldToScreen(projX, projY);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.beginPath(); ctx.arc(sp.x, sp.y, 5, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Landing marker
+        if (simState === 'landed' && resultRange !== null) {
+            const lx = cannonWorldX + resultRange;
+            const lp = worldToScreen(lx, 0), cp = worldToScreen(cannonWorldX, 0);
+            ctx.strokeStyle = '#e05252'; ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(lp.x, GROUND_Y_CANVAS - 12); ctx.lineTo(lp.x, GROUND_Y_CANVAS + 8); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(224,82,82,0.25)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(cp.x, GROUND_Y_CANVAS + 20); ctx.lineTo(lp.x, GROUND_Y_CANVAS + 20); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cp.x, GROUND_Y_CANVAS + 16); ctx.lineTo(cp.x, GROUND_Y_CANVAS + 24); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(lp.x, GROUND_Y_CANVAS + 16); ctx.lineTo(lp.x, GROUND_Y_CANVAS + 24); ctx.stroke();
+            ctx.fillStyle = '#e05252'; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('R = ' + resultRange.toFixed(1) + ' m', (cp.x + lp.x) / 2, GROUND_Y_CANVAS + 16);
+        }
+
+        // Score
+        const st = 'Hits: ' + score + '/' + TARGET_COUNT;
+        ctx.fillStyle = score >= TARGET_COUNT ? '#2d7d46' : '#1a1a2e';
+        ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText(st, 10, 22);
+
+        // Cannon
+        drawCannon();
+
+        // Hit popups
+        drawHitPopups();
+    }
+
+    function niceStep(raw) {
+        if (raw <= 0) return 1;
+        const exp = Math.floor(Math.log10(raw));
+        const frac = raw / Math.pow(10, exp);
+        let nice;
+        if (frac <= 1.5) nice = 1;
+        else if (frac <= 3.5) nice = 2;
+        else if (frac <= 7.5) nice = 5;
+        else nice = 10;
+        return nice * Math.pow(10, exp);
+    }
+
+    function drawGrid(W, s) {
+        const wr = cameraWorldX + W / s;
+        const TARGET_PX = 55; // desired px between major grid lines
+        const rawStepX = TARGET_PX / s;
+        const majorX = niceStep(rawStepX);
+        const minorX = majorX / 5;
+        const rawStepY = TARGET_PX / s;
+        const majorY = niceStep(rawStepY);
+        const minorY = majorY / 5;
+
+        // Minor vertical grid lines
+        const startMinorX = Math.floor(cameraWorldX / minorX) * minorX;
+        ctx.strokeStyle = 'rgba(0,0,0,0.07)'; ctx.lineWidth = 0.5;
+        for (let gx = startMinorX; gx < wr; gx += minorX) {
+            if (Math.abs(Math.round(gx / majorX) - gx / majorX) < 0.001) continue; // skip major positions
+            const sx = (gx - cameraWorldX) * s;
+            ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, GROUND_Y_CANVAS); ctx.stroke();
+        }
+        // Major vertical grid lines
+        const startMajorX = Math.floor(cameraWorldX / majorX) * majorX;
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1;
+        for (let gx = startMajorX; gx < wr; gx += majorX) {
+            const sx = (gx - cameraWorldX) * s;
+            ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, GROUND_Y_CANVAS); ctx.stroke();
+        }
+
+        // Minor horizontal grid lines
+        const startMinorY = Math.floor(0 / minorY) * minorY;
+        ctx.strokeStyle = 'rgba(0,0,0,0.07)'; ctx.lineWidth = 0.5;
+        for (let hy = startMinorY; hy < 80; hy += minorY) {
+            if (Math.abs(Math.round(hy / majorY) - hy / majorY) < 0.001) continue;
+            const sp = worldToScreen(0, hy);
+            if (sp.y > 0) { ctx.beginPath(); ctx.moveTo(0, sp.y); ctx.lineTo(W, sp.y); ctx.stroke(); }
+        }
+        // Major horizontal grid lines
+        const startMajorY = Math.floor(0 / majorY) * majorY;
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1;
+        for (let hy = startMajorY; hy < 80; hy += majorY) {
+            const sp = worldToScreen(0, hy);
+            if (sp.y > 0) { ctx.beginPath(); ctx.moveTo(0, sp.y); ctx.lineTo(W, sp.y); ctx.stroke(); }
+        }
+
+        // X-axis labels
+        ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.font = '9px system-ui, sans-serif'; ctx.textAlign = 'center';
+        for (let gx = startMajorX; gx < wr; gx += majorX) {
+            const label = (majorX >= 1) ? gx.toFixed(0) + ' m' : gx.toFixed(2) + ' m';
+            ctx.fillText(label, (gx - cameraWorldX) * s, GROUND_Y_CANVAS - 6);
+        }
+        // Y-axis labels
+        ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.font = '8px system-ui, sans-serif'; ctx.textAlign = 'right';
+        for (let hy = startMajorY; hy < 80; hy += majorY) {
+            if (hy === 0) continue;
+            const sp = worldToScreen(0, hy);
+            if (sp.y > 10) {
+                const label = (majorY >= 1) ? hy.toFixed(0) + ' m' : hy.toFixed(2) + ' m';
+                ctx.fillText(label, 28, sp.y + 3);
+            }
+        }
+    }
+
+    function drawTarget(t) {
+        const tp = worldToScreen(t.x, 0);
+        const tr = TARGET_RADIUS_PX;
+        const by = GROUND_Y_CANVAS;
+
+        // Small pole
+        if (!t.hit) {
+            ctx.strokeStyle = '#8b7355'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(tp.x, by); ctx.lineTo(tp.x, tp.y); ctx.stroke();
+            ctx.fillStyle = '#8b7355';
+            ctx.beginPath(); ctx.roundRect(tp.x - 5, by - 2, 10, 3, 2); ctx.fill();
+        }
+
+        if (t.flashTimer > 0) {
+            ctx.fillStyle = '#ffdd57'; ctx.globalAlpha = 0.7;
+            ctx.beginPath(); ctx.arc(tp.x, tp.y, tr + 8, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+
+        if (t.hit) {
+            ctx.fillStyle = 'rgba(180,180,180,0.25)';
+            ctx.beginPath(); ctx.arc(tp.x, tp.y, tr, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(130,130,130,0.25)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(tp.x, tp.y, tr, 0, Math.PI * 2); ctx.stroke();
+            return;
+        }
+
+        // Bullseye
+        ctx.fillStyle = '#c5221f';
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, tr, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, tr * 0.62, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#c5221f';
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, tr * 0.28, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, tr, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    function drawHitPopups() {
+        targets.forEach(function(t) {
+            if (t.hitPopupTimer <= 0) return;
+            const tp = worldToScreen(t.x, 0);
+            // Particles
+            t.particles.forEach(function(p) {
+                ctx.globalAlpha = Math.min(1, p.life / 0.2);
+                ctx.fillStyle = '#ffbb33';
+                ctx.beginPath(); ctx.arc(tp.x + p.x, tp.y + p.y, p.r, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            // HIT! text
+            const ty = tp.y + t.hitPopupY;
+            const ta = Math.min(1, t.hitPopupTimer / 0.2);
+            ctx.fillStyle = 'rgba(200,30,20,' + ta + ')';
+            ctx.font = 'bold 15px system-ui, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('HIT!', tp.x, ty);
+        });
+    }
+
+    function drawCannon() {
+        const cwy = height;
+        const baseScreen = worldToScreen(cannonWorldX, cwy);
+        const groundScreen = worldToScreen(cannonWorldX, 0);
+        const bx = baseScreen.x, by = baseScreen.y + 2; // shift down so barrel at ground when h=0
+        const gy = groundScreen.y;
+        const angleRad = angle * Math.PI / 180;
+        const isFiring = simState === 'flying';
+
+        // ── Platform (when elevated) ──
+        if (cwy > 0.3) {
+            const platW = CANNON_BODY_W + 16;
+            const platBot = gy;
+            const platTop = by + CANNON_BODY_H + CANNON_WHEEL_R;
+            const legH = platBot - platTop;
+
+            // Pillars
+            ctx.fillStyle = '#6b5230';
+            ctx.fillRect(bx - platW / 2 + 4, platTop, 5, legH);
+            ctx.fillRect(bx + platW / 2 - 9, platTop, 5, legH);
+            // Center pillar (if tall enough)
+            if (legH > 40) {
+                ctx.fillRect(bx - 2, platTop, 4, legH);
+            }
+            // Cross braces
+            ctx.fillStyle = '#5a4328';
+            const midY = platTop + legH * 0.45;
+            ctx.fillRect(bx - platW / 2 + 5, midY, platW - 10, 2);
+            if (legH > 80) {
+                ctx.fillRect(bx - platW / 2 + 5, platTop + legH * 0.8, platW - 10, 2);
+            }
+            // Platform surface
+            ctx.fillStyle = '#8b7355';
+            ctx.beginPath();
+            ctx.roundRect(bx - platW / 2, platTop - 3, platW, 5, 2);
+            ctx.fill();
+            ctx.fillStyle = '#a08868';
+            ctx.beginPath();
+            ctx.roundRect(bx - platW / 2 + 1, platTop - 2, platW - 2, 2, 1);
+            ctx.fill();
+        }
+
+        // ── Wheels ──
+        const wheelY = by + CANNON_BODY_H - 1;
+        function drawWheel(cx, cy) {
+            ctx.fillStyle = '#3a2a1a';
+            ctx.beginPath(); ctx.arc(cx, cy, CANNON_WHEEL_R, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#4d3724';
+            ctx.beginPath(); ctx.arc(cx, cy, CANNON_WHEEL_R - 3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#6b5230';
+            ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#4d3724'; ctx.lineWidth = 1.5;
+            for (let i = 0; i < 4; i++) {
+                const a = i * Math.PI / 4 + Math.PI / 8;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + (CANNON_WHEEL_R - 4) * Math.cos(a), cy + (CANNON_WHEEL_R - 4) * Math.sin(a));
+                ctx.stroke();
+            }
+        }
+        drawWheel(bx - CANNON_BODY_W / 2 + 6, wheelY);
+        drawWheel(bx + CANNON_BODY_W / 2 - 6, wheelY);
+
+        // Axle
+        ctx.fillStyle = '#2a1f14';
+        ctx.fillRect(bx - CANNON_BODY_W / 2 + 4, wheelY - 1.5, CANNON_BODY_W - 8, 3);
+
+        // Carriage
+        ctx.fillStyle = '#4d3724';
+        ctx.beginPath(); ctx.roundRect(bx - CANNON_BODY_W / 2, by - 2, CANNON_BODY_W, CANNON_BODY_H, 3); ctx.fill();
+        ctx.fillStyle = '#6b5230';
+        ctx.beginPath(); ctx.roundRect(bx - CANNON_BODY_W / 2 + 2, by, CANNON_BODY_W - 4, 4, 2); ctx.fill();
+
+        // Trunnion
+        ctx.fillStyle = '#444';
+        ctx.fillRect(bx - 5, by - 6, 10, 6);
+        ctx.fillStyle = '#555';
+        ctx.fillRect(bx - 4, by - 5, 8, 4);
+
+        // ── Barrel ──
+        const pivotX = bx, pivotY = by - 2;
+        const tipX = pivotX + CANNON_BARREL_LEN * Math.cos(angleRad);
+        const tipY = pivotY - CANNON_BARREL_LEN * Math.sin(angleRad);
+
+        ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = CANNON_BARREL_W + 1; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(tipX, tipY); ctx.stroke();
+        ctx.strokeStyle = '#5c5c5c'; ctx.lineWidth = CANNON_BARREL_W;
+        ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(tipX, tipY); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
+        const hoX = 2 * Math.sin(angleRad), hoY = 2 * Math.cos(angleRad);
+        ctx.beginPath(); ctx.moveTo(pivotX + hoX, pivotY + hoY); ctx.lineTo(tipX + hoX, tipY + hoY); ctx.stroke();
+
+        // Rings
+        ctx.strokeStyle = '#3d3d3d'; ctx.lineWidth = CANNON_BARREL_W + 2;
+        for (let d = 0.35; d <= 0.7; d += 0.35) {
+            const rx = pivotX + CANNON_BARREL_LEN * d * Math.cos(angleRad);
+            const ry = pivotY - CANNON_BARREL_LEN * d * Math.sin(angleRad);
+            ctx.beginPath();
+            ctx.moveTo(rx - 1.5 * Math.sin(angleRad), ry - 1.5 * Math.cos(angleRad));
+            ctx.lineTo(rx + 1.5 * Math.sin(angleRad), ry + 1.5 * Math.cos(angleRad));
+            ctx.stroke();
+        }
+
+        // Muzzle
+        ctx.fillStyle = '#3d3d3d';
+        const pX = Math.sin(angleRad), pY = Math.cos(angleRad);
+        const mW = CANNON_BARREL_W + 5, mL = 5;
+        ctx.beginPath();
+        ctx.moveTo(tipX - pX * (CANNON_BARREL_W / 2 + 1), tipY - pY * (CANNON_BARREL_W / 2 + 1));
+        ctx.lineTo(tipX - pX * mW / 2, tipY - pY * mW / 2);
+        ctx.lineTo(tipX - pX * mW / 2 + mL * Math.cos(angleRad), tipY - pY * mW / 2 - mL * Math.sin(angleRad));
+        ctx.lineTo(tipX + pX * mW / 2 + mL * Math.cos(angleRad), tipY + pY * mW / 2 - mL * Math.sin(angleRad));
+        ctx.lineTo(tipX + pX * mW / 2, tipY + pY * mW / 2);
+        ctx.lineTo(tipX + pX * (CANNON_BARREL_W / 2 + 1), tipY + pY * (CANNON_BARREL_W / 2 + 1));
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#111';
+        ctx.beginPath(); ctx.arc(tipX, tipY, CANNON_BARREL_W / 2 - 1, 0, Math.PI * 2); ctx.fill();
+
+        // Pivot bolt
+        ctx.fillStyle = '#2a2a2a';
+        ctx.beginPath(); ctx.arc(pivotX, pivotY, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#666';
+        ctx.beginPath(); ctx.arc(pivotX, pivotY, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        // Angle arc
+        if (angle > 0) {
+            ctx.strokeStyle = 'rgba(80,80,80,0.2)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(pivotX, pivotY, 20, 0, -angleRad, true); ctx.stroke();
+            ctx.fillStyle = 'rgba(60,60,60,0.4)'; ctx.font = 'bold 10px system-ui, sans-serif'; ctx.textAlign = 'center';
+            const la = -angleRad / 2;
+            ctx.fillText(angle + '\u00B0', pivotX + 34 * Math.cos(la), pivotY + 34 * Math.sin(la));
+        }
+
+        // Height label
+        if (height > 0.3) {
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.font = '9px system-ui, sans-serif'; ctx.textAlign = 'right';
+            ctx.fillText('h=' + height.toFixed(1) + 'm', bx - 14, by + 5);
+        }
+
+        // Drag hint
+        if (simState === 'idle') {
+            ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.font = '9px system-ui, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('drag to move', bx, wheelY + CANNON_WHEEL_R + 14);
+        }
+
+        // Muzzle flash
+        if (isFiring && projTime < 0.06) {
+            const fx = tipX + 10 * Math.cos(angleRad), fy = tipY - 10 * Math.sin(angleRad);
+            ctx.globalAlpha = 0.5; ctx.fillStyle = '#ffcc00';
+            ctx.beginPath(); ctx.arc(fx, fy, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 0.3; ctx.fillStyle = '#ff8800';
+            ctx.beginPath(); ctx.arc(fx, fy, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    // ── Physics ──
+    function fire() {
+        if (simState === 'flying') return;
+        const rad = angle * Math.PI / 180;
+        projX = cannonWorldX; projY = height;
+        projVx = velocity * Math.cos(rad); projVy = velocity * Math.sin(rad);
+        projTime = 0; projMaxY = projY;
+        trail = [{ x: projX, y: projY }];
+        resultRange = null; resultMaxH = null; resultTime = null;
+        simState = 'flying';
+        updateStats(); draw();
+    }
+
+    function updateProjectile(dt) {
+        if (simState !== 'flying') return;
+        projTime += dt;
+        projX += projVx * dt;
+        projY += projVy * dt - 0.5 * G * dt * dt;
+        projVy -= G * dt;
+        if (projY > projMaxY) projMaxY = projY;
+        trail.push({ x: projX, y: projY });
+
+        // Check target hits (use fixed pixel radius converted to world)
+        const hitDistWorld = TARGET_RADIUS_PX / getScale();
+        targets.forEach(function(t) {
+            if (t.hit) return;
+            if (Math.abs(projX - t.x) < hitDistWorld && Math.abs(projY) < hitDistWorld && projY >= 0) {
+                t.hit = true;
+                spawnHitEffect(t);
+                score++;
+            }
+        });
+
+        if (projY <= 0) {
+            projY = 0;
+            resultRange = projX - cannonWorldX;
+            resultMaxH = projMaxY;
+            resultTime = projTime;
+            simState = 'landed';
+            updateStats();
+        }
+    }
+
+    function clearSim() {
+        simState = 'idle'; trail = [];
+        resultRange = null; resultMaxH = null; resultTime = null;
+        statRange.textContent = '--'; statMaxH.textContent = '--'; statTime.textContent = '--';
+        generateTargets();
+    }
+
+    function updateStats() {
+        if (resultRange !== null) {
+            statRange.textContent = resultRange.toFixed(1);
+            statMaxH.textContent = resultMaxH.toFixed(1);
+            statTime.textContent = resultTime.toFixed(2);
+        }
+    }
+
+    // ── Zoom ──
+    function setZoom(z) {
+        zoom = Math.max(0.09, Math.min(12.0, z));
+        zoomDisplay.textContent = zoom.toFixed(2) + 'x';
+        zoomOutBtn.disabled = zoom <= 0.09;
+        zoomInBtn.disabled = zoom >= 12.0;
+        draw();
+    }
+
+    // ── Sliders ──
+    angleSlider.addEventListener('input', function() {
+        angle = +this.value; angleValue.innerHTML = angle + '&deg;'; if (simState === 'idle') draw();
+    });
+    velSlider.addEventListener('input', function() {
+        velocity = +this.value; velValue.textContent = velocity.toFixed(1) + ' m/s'; if (simState === 'idle') draw();
+    });
+    heightSlider.addEventListener('input', function() {
+        height = +this.value; heightValue.textContent = height.toFixed(1) + ' m'; if (simState === 'idle') draw();
+    });
+    launchBtn.addEventListener('click', fire);
+    clearBtn.addEventListener('click', function() { clearSim(); draw(); });
+    zoomInBtn.addEventListener('click', function() { setZoom(zoom * 1.3); });
+    zoomOutBtn.addEventListener('click', function() { setZoom(zoom / 1.3); });
+
+    // ── Drag ──
+    function getCanvasPos(e) {
+        const r = canvas.getBoundingClientRect();
+        return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) };
+    }
+
+    function isNearCannon(cx, cy) {
+        const sp = worldToScreen(cannonWorldX, height);
+        return Math.abs(cx - sp.x) < 30 && cy - sp.y > -15 && cy - sp.y < 45;
+    }
+
+    function isNearTarget(cx, cy) {
+        for (let i = 0; i < targets.length; i++) {
+            if (targets[i].hit) continue;
+            const sp = worldToScreen(targets[i].x, 0);
+            const dx = cx - sp.x, dy = cy - sp.y;
+            if (Math.sqrt(dx * dx + dy * dy) < TARGET_RADIUS_PX + 10) return i;
+        }
+        return -1;
+    }
+
+    canvas.addEventListener('pointerdown', function(e) {
+        if (simState !== 'idle') return;
+        const pos = getCanvasPos(e);
+        const ti = isNearTarget(pos.x, pos.y);
+        if (ti >= 0) {
+            dragging = ti;
+            dragStartX = pos.x;
+            dragStartWorldX = targets[ti].x;
+            canvas.style.cursor = 'grabbing';
+            canvas.setPointerCapture(e.pointerId);
+            e.preventDefault();
+            return;
+        }
+        if (isNearCannon(pos.x, pos.y)) {
+            dragging = 'cannon';
+            dragStartX = pos.x;
+            dragStartY = pos.y;
+            dragStartWorldX = cannonWorldX;
+            dragStartWorldY = height;
+            canvas.style.cursor = 'grabbing';
+            canvas.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        }
+    });
+
+    canvas.addEventListener('pointermove', function(e) {
+        if (dragging === null) {
+            if (simState === 'idle') {
+                const pos = getCanvasPos(e);
+                canvas.style.cursor = (isNearTarget(pos.x, pos.y) >= 0 || isNearCannon(pos.x, pos.y)) ? 'grab' : 'default';
+            }
+            return;
+        }
+        const pos = getCanvasPos(e);
+        if (dragging === 'cannon') {
+            const dx = pos.x - dragStartX, dy = pos.y - dragStartY;
+            const s = getScale();
+            cannonWorldX = Math.max(cameraWorldX + 2, Math.min(cameraWorldX + canvas.width / s - 2, dragStartWorldX + dx / s));
+            const newH = Math.max(0, Math.min(40, dragStartWorldY - dy / s));
+            height = newH;
+            heightSlider.value = newH;
+            heightValue.textContent = newH.toFixed(1) + ' m';
+        } else {
+            const s2 = getScale();
+            const dx = (pos.x - dragStartX) / s2;
+            targets[dragging].x = Math.max(cameraWorldX + 2, Math.min(cameraWorldX + canvas.width / s2 - 2, dragStartWorldX + dx));
+        }
+        draw();
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('pointerup', function() { dragging = null; canvas.style.cursor = 'default'; });
+    canvas.addEventListener('pointercancel', function() { dragging = null; canvas.style.cursor = 'default'; });
+
+    // ── Animation ──
+    let lastTime = 0, animId = null;
+    function tick(ts) {
+        if (!lastTime) lastTime = ts;
+        let dt = (ts - lastTime) / 1000;
+        lastTime = ts;
+        if (dt > 0.05) dt = 0.016;
+
+        targets.forEach(function(t) {
+            if (t.flashTimer > 0) t.flashTimer -= dt;
+            if (t.hitPopupTimer > 0) {
+                t.hitPopupTimer -= dt;
+                t.hitPopupY -= 25 * dt;
+                t.particles.forEach(function(p) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; });
+                t.particles = t.particles.filter(function(p) { return p.life > 0; });
+            }
+        });
+
+        if (simState === 'flying') updateProjectile(dt);
+        draw();
+        animId = requestAnimationFrame(tick);
+    }
+
+    // ── Keyboard ──
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && simState !== 'flying') fire();
+        if (e.key === 'c' || e.key === 'C') { clearSim(); draw(); }
+        if (e.key === '=' || e.key === '+') setZoom(zoom * 1.3);
+        if (e.key === '-') setZoom(zoom / 1.3);
+    });
+
+    // ── roundRect polyfill ──
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+            r = typeof r === 'number' ? r : (r || 0);
+            this.moveTo(x + r, y); this.lineTo(x + w - r, y);
+            this.quadraticCurveTo(x + w, y, x + w, y + r); this.lineTo(x + w, y + h - r);
+            this.quadraticCurveTo(x + w, y + h, x + w - r, y + h); this.lineTo(x + r, y + h);
+            this.quadraticCurveTo(x, y + h, x, y + h - r); this.lineTo(x, y + r);
+            this.quadraticCurveTo(x, y, x + r, y);
+        };
+    }
+
+    // ── MCQ Logic ──
+    document.querySelectorAll('.mcq-question').forEach(function(q) {
+        var opts = q.querySelectorAll('.mcq-option');
+        var fbs = q.querySelectorAll('.mcq-feedback');
+        opts.forEach(function(opt) {
+            opt.addEventListener('click', function() {
+                opts.forEach(function(o) { o.classList.remove('selected', 'correct', 'incorrect'); });
+                fbs.forEach(function(f) { f.classList.remove('show', 'fb-correct', 'fb-incorrect'); });
+                opt.classList.add('selected');
+                var val = opt.getAttribute('data-value'), showed = false;
+                fbs.forEach(function(f) {
+                    if (f.getAttribute('data-correct') === val) { f.classList.add('show', 'fb-correct'); opt.classList.add('correct'); showed = true; }
+                    else if (f.getAttribute('data-wrong') === val) { f.classList.add('show', 'fb-incorrect'); opt.classList.add('incorrect'); showed = true; }
+                });
+                if (!showed) fbs.forEach(function(f) {
+                    if (f.hasAttribute('data-correct')) { f.classList.add('show', 'fb-correct');
+                        opts.forEach(function(o) { if (o.getAttribute('data-value') === f.getAttribute('data-correct')) o.classList.add('correct'); });
+                    }
+                });
+            });
+        });
+    });
+
+    // ── Init ──
+    generateTargets();
+    setZoom(1.0);
+    draw();
+    animId = requestAnimationFrame(tick);
+    window.addEventListener('beforeunload', function() { if (animId) cancelAnimationFrame(animId); });
+</script></html>
