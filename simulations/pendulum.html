@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendulum Lab — CommonLab</title>
+    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, and gravity.">
+    <link rel="stylesheet" href="../main.css">
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container nav-container">
+            <a href="../index.html" class="logo" aria-label="CommonLab Home">
+                <span class="logo-icon">&#9670;</span>
+                <span class="logo-text">CommonLab</span>
+            </a>
+            <nav class="primary-nav" aria-label="Main navigation">
+                <ul>
+                    <li><a href="../index.html#simulations">Simulations</a></li>
+                    <li><a href="../index.html#about">About</a></li>
+                    <li><a href="../index.html#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="sim-page-header">
+            <div class="container">
+                <h1>Pendulum Lab</h1>
+                <p>Explore how length, mass, and gravity affect a pendulum's period.</p>
+            </div>
+        </div>
+
+        <section class="sim-canvas-area">
+            <div class="container">
+                <div class="sim-placeholder">
+                    <span class="placeholder-icon">&#126;</span>
+                    <p>Pendulum simulation coming soon.</p>
+                    <p style="font-size:0.85rem;">Interactive canvas with adjustable length, mass, and angle.</p>
+                </div>
+
+                <div class="sim-controls">
+                    <label>
+                        Length
+                        <input type="range" min="50" max="200" value="120" disabled>
+                    </label>
+                    <label>
+                        Mass
+                        <input type="range" min="1" max="10" value="5" disabled>
+                    </label>
+                    <label>
+                        Gravity
+                        <input type="range" min="1" max="20" value="9.8" step="0.1" disabled>
+                    </label>
+                    <label>
+                        Angle
+                        <input type="range" min="5" max="80" value="30" disabled>
+                    </label>
+                </div>
+
+                <a href="../index.html#simulations" class="sim-back-link">Back to Simulations</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-container">
+            <p>&copy; 2026 CommonLab. Free science simulations for everyone.</p>
+        </div>
+    </footer>
+
+    <script src="../index.js"></script>
+</body>
+</html>

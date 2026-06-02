@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>States of Matter — CommonLab</title>
+    <meta name="description" content="Heat and cool substances to observe solid, liquid, and gas phases at the molecular level.">
+    <link rel="stylesheet" href="../main.css">
+    <style>
+        #matterCanvas { width: 100%; max-width: 900px; height: auto; aspect-ratio: 900 / 600; display: block; border-radius: 8px; background: #f5f5f0; cursor: default; }
+
+        .substance-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+        .sub-btn { flex: 1; min-width: 70px; padding: 0.55rem 0.5rem; border: 2px solid #e0e0e0; border-radius: 8px; background: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 600; color: #555; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .sub-btn:hover { border-color: #999; color: #333; }
+        .sub-btn.active { border-color: #4a6fa5; background: #eef3fa; color: #4a6fa5; }
+        .sub-btn .sub-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+        .phase-display { text-align: center; }
+        .phase-pill { display: inline-block; padding: 0.45rem 1.2rem; border-radius: 999px; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.4s; }
+        .phase-pill.solid { background: #dbeafe; color: #1e40af; }
+        .phase-pill.liquid { background: #d1fae5; color: #065f46; }
+        .phase-pill.gas    { background: #fee2e2; color: #991b1b; }
+
+        .readout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        .readout { text-align: center; padding: 0.6rem 0.4rem; background: #f8f9fa; border-radius: 8px; }
+        .readout .val { font-size: 1.4rem; font-weight: 800; color: #1a1a2e; font-variant-numeric: tabular-nums; }
+        .readout .lbl { font-size: 0.68rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .temp-control { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0; }
+        .temp-control .tc-icon { font-size: 1.5rem; flex-shrink: 0; }
+        .temp-control input[type="range"] { flex: 1; accent-color: #888; }
+        #heatLabel { transition: color 0.3s; }
+
+        /* ── Inline stats bar ── */
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .stat-val {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-unit {
+            font-size: 0.7rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .btn-reset { width: 100%; padding: 0.55rem; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 600; color: #666; cursor: pointer; transition: all 0.2s; }
+        .btn-reset:hover { background: #f5f5f5; color: #333; }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="container nav-container">
+        <a href="../index.html" class="logo"><span class="logo-icon">&#9670;</span><span class="logo-text">CommonLab</span></a>
+        <nav class="primary-nav"><ul>
+            <li><a href="../index.html#simulations">Simulations</a></li>
+            <li><a href="../index.html#about">About</a></li>
+            <li><a href="../index.html#contact">Contact</a></li>
+        </ul></nav>
+    </div>
+</header>
+
+<main>
+    <div class="sim-page-header">
+        <div class="container"><h1>States of Matter</h1><p>Heat and cool atoms &amp; molecules to observe solid, liquid, and gas phases.</p></div>
+    </div>
+    <section class="sim-canvas-area">
+        <div class="container sim-layout">
+
+            <div class="sim-main">
+                <div class="canvas-wrapper"><canvas id="matterCanvas" width="900" height="600"></canvas></div>
+
+                <!-- Inline readout bar -->
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <span class="stat-label">Phase</span>
+                        <span id="phasePill" class="phase-pill solid">Solid</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Temp</span>
+                        <span class="stat-val" id="tempValK">250</span><span class="stat-unit">K</span>
+                        <span class="stat-val" id="tempValC" style="font-size:0.85rem;">-23</span><span class="stat-unit" style="font-size:0.7rem;">°C</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Melting</span>
+                        <span class="stat-val" id="mpVal">273 K</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Boiling</span>
+                        <span class="stat-val" id="bpVal">373 K</span>
+                    </div>
+                </div>
+
+                <div class="controls-panel">
+                    <!-- Substance buttons -->
+                    <div class="substance-pick" id="substancePick">
+                        <button class="sub-btn" data-sub="neon"><span class="sub-dot" style="background:#e890a0;"></span>Neon</button>
+                        <button class="sub-btn" data-sub="nitrogen"><span class="sub-dot" style="background:#6090d0;"></span>Nitrogen</button>
+                        <button class="sub-btn" data-sub="argon"><span class="sub-dot" style="background:#60c090;"></span>Argon</button>
+                        <button class="sub-btn" data-sub="oxygen"><span class="sub-dot" style="background:#e05050;"></span>Oxygen</button>
+                        <button class="sub-btn active" data-sub="water"><span class="sub-dot" style="background:#e05050;"></span>Water</button>
+                    </div>
+
+                    <!-- Heat / Cool control -->
+                    <div class="temp-control">
+                        <span class="tc-icon" id="tcIcon">🧊</span>
+                        <input type="range" id="heatSlider" min="-100" max="100" value="0" step="1">
+                        <span class="tc-icon" id="tcIconR">🔥</span>
+                    </div>
+                    <div style="text-align:center;font-size:0.75rem;color:#999;margin-top:-0.3rem;" id="heatLabel">Heat / Cool</div>
+                    <button class="btn-reset" id="btnReset">↺ Reset</button>
+                </div>
+            </div>
+
+            <aside class="sim-sidebar">
+                <div class="equation-card">
+                    <h3>How It Works</h3>
+                    <p class="eq-explanation">
+                        Drag the slider to heat or cool. Particles interact through intermolecular forces:
+                        <strong>solid</strong> at low temperatures, <strong>liquid</strong> between the melting
+                        and boiling points, and <strong>gas</strong> above the boiling point.
+                    </p>
+                </div>
+                <div class="equation-card">
+                    <h3>About Phase Changes</h3>
+                    <p class="eq-explanation">
+                        During a phase change, temperature stays constant while energy is absorbed
+                        or released — this is <strong>latent heat</strong>, the energy needed to overcome
+                        or form intermolecular bonds.
+                    </p>
+                </div>
+            </aside>
+
+        </div>
+        <div class="container" style="margin-top:1.5rem;text-align:center;">
+            <a href="../index.html#simulations" class="sim-back-link">← Back to Simulations</a>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer"><div class="container footer-container"><p>&copy; 2026 CommonLab. Free science simulations for everyone.</p></div></footer>
+
+<script src="../index.js"></script>
+<script>
+'use strict';
+
+// ═══════════════════════════════════════
+//  SUBSTANCE DATABASE (PhET-aligned)
+// ═══════════════════════════════════════
+const SUBS = {
+    neon:    { name:'Neon',    mp:17,  bp:24,  minT:5,   maxT:45,  atomR:5.5, color:'#e890a0', mol:'mono',
+                seg:[15, 3, 25, 4, 53] },
+    nitrogen:{ name:'Nitrogen',mp:63,  bp:78,  minT:30,  maxT:120, atomR:5.8, color:'#6090d0', mol:'di',
+                seg:[15, 3, 25, 4, 53] },
+    argon:   { name:'Argon',   mp:84,  bp:87,  minT:50,  maxT:130, atomR:6.5, color:'#60c090', mol:'mono',
+                seg:[15, 3, 25, 4, 53] },
+    oxygen:  { name:'Oxygen',  mp:54,  bp:90,  minT:30,  maxT:140, atomR:4.5, color:'#e05050', mol:'di',
+                seg:[15, 3, 25, 4, 53] },
+    water:   { name:'Water',   mp:273, bp:373, minT:200, maxT:450, atomR:4.5, color:'#e05050', mol:'tri',
+                seg:[12, 7, 35, 7, 39] },
+};
+
+let subKey = 'water';
+let sub = SUBS[subKey];
+let temperature = 250; // Kelvin
+let energy = 0; // 0–100, total energy added
+let phase = 'solid';
+let heatFlow = 0; // -100 (max cooling) to +100 (max heating)
+
+// ═══════════════════════════════════════
+//  CANVAS & CONTAINER
+// ═══════════════════════════════════════
+const C = document.getElementById('matterCanvas');
+const ctx = C.getContext('2d');
+const W = C.width, H = C.height;
+
+// Container bounds
+const BOX = { x:216, y:34, w:468, h:533 };
+
+// ═══════════════════════════════════════
+//  PARTICLE SYSTEM
+// ═══════════════════════════════════════
+const NUM = 50;
+let particles = [];
+
+function initParticles() {
+    const lattice = buildLattice();
+    particles = [];
+    for (let i = 0; i < NUM; i++) {
+        const pos = lattice[i] || randomPos();
+        particles.push({
+            x: pos.x, y: pos.y,
+            eqX: pos.x, eqY: pos.y,
+            vx: 0, vy: 0,
+            angle: Math.random() * Math.PI * 2,
+            av: 0,
+            seed: Math.random() * 9999
+        });
+    }
+}
+
+function buildLattice() {
+    const positions = [];
+    const sp = sub.atomR * 3.0;
+    const rh = sp * 0.866;
+    const cx = BOX.x + BOX.w / 2;
+    const cy = BOX.y + BOX.h - 40;
+    for (let row = 0; row < 30; row++) {
+        const y = cy - row * rh;
+        if (y < BOX.y + 30) break;
+        const off = (row % 2) * sp / 2;
+        for (let col = -12; col < 12; col++) {
+            const x = cx + off + col * sp;
+            if (x > BOX.x + 18 && x < BOX.x + BOX.w - 18 && y > BOX.y + 18) {
+                positions.push({ x, y });
+            }
+        }
+    }
+    return positions;
+}
+
+// Assign each particle to its nearest free lattice site (for smooth solidification)
+function reassignLattice() {
+    const sites = buildLattice();
+    if (sites.length === 0) return;
+    const used = new Set();
+    for (const p of particles) {
+        let best = null, bestDist = Infinity;
+        for (let i = 0; i < sites.length; i++) {
+            if (used.has(i)) continue;
+            const dx = p.x - sites[i].x, dy = p.y - sites[i].y;
+            const d = dx*dx + dy*dy;
+            if (d < bestDist) { bestDist = d; best = i; }
+        }
+        if (best !== null) {
+            used.add(best);
+            // Gently guide toward the lattice site (don't snap instantly)
+            p.eqX = sites[best].x;
+            p.eqY = sites[best].y;
+        }
+    }
+}
+
+function randomPos() {
+    return {
+        x: BOX.x + 30 + Math.random() * (BOX.w - 60),
+        y: BOX.y + 60 + Math.random() * (BOX.h - 120)
+    };
+}
+
+// ═══════════════════════════════════════
+//  PHYSICS — soft IMFs, emergent phases
+// ═══════════════════════════════════════
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+function lerp(a, b, va, vb, x) { if (b===a) return va; const t=(x-a)/(b-a); return va+(vb-va)*t; }
+function gauss() { return (Math.random()+Math.random()+Math.random()-1.5)*1.4; }
+
+function calcTargetSp(T, sub) {
+    if (T <= sub.mp) {
+        const f = (T - sub.minT) / (sub.mp - sub.minT);
+        return 0.04 + 1.46 * f * f;
+    }
+    if (T <= sub.bp) {
+        const f = (T - sub.mp) / (sub.bp - sub.mp);
+        return 1.5 + 2.5 * f;
+    }
+    const f = (T - sub.bp) / (sub.maxT - sub.bp);
+    return 4.0 + 4.0 * f;
+}
+
+// Map energy (0-100) to temperature via heating curve with plateaus
+function energyToTemp(en, sub) {
+    const s = sub.seg, total = s[0]+s[1]+s[2]+s[3]+s[4];
+    const frac = clamp(en, 0, 100) / 100 * total;
+    let acc = 0;
+    // Solid heating
+    if (frac <= s[0]) return sub.minT + (frac/s[0]) * (sub.mp - sub.minT);
+    acc += s[0];
+    // Melting plateau
+    if (frac <= acc + s[1]) return sub.mp;
+    acc += s[1];
+    // Liquid heating
+    if (frac <= acc + s[2]) return sub.mp + ((frac-acc)/s[2]) * (sub.bp - sub.mp);
+    acc += s[2];
+    // Boiling plateau
+    if (frac <= acc + s[3]) return sub.bp;
+    acc += s[3];
+    // Gas heating
+    return sub.bp + Math.min(1, (frac-acc)/s[4]) * (sub.maxT - sub.bp);
+}
+
+// Map temperature back to energy (for initialisation)
+function tempToEnergy(T, sub) {
+    // Binary search
+    let lo = 0, hi = 100;
+    for (let i = 0; i < 30; i++) {
+        const mid = (lo+hi)/2;
+        if (energyToTemp(mid, sub) < T) lo = mid; else hi = mid;
+    }
+    return (lo+hi)/2;
+}
+
+function updatePhysics() {
+    // ── Evolve energy from heat flow, then map to temperature (latent heat plateaus) ──
+    energy += heatFlow / 100 * 0.06;
+    energy = clamp(energy, 0, 100);
+    temperature = energyToTemp(energy, sub);
+    const T = temperature;
+
+    // ── Thermostat ──
+    const targetSp = calcTargetSp(T, sub);
+    const gamma = 0.016;
+    const kickStd = Math.sqrt(2 * gamma) * targetSp;
+
+    // ── Triangular-well IMF (molecule-size-aware) ──
+    const effR = sub.mol === 'tri' ? sub.atomR * 1.6 :
+                 sub.mol === 'di'  ? sub.atomR * 1.3 : sub.atomR;
+    const R_EQ   = effR * 2.5;
+    const R_PEAK = effR * 3.0;
+    const R_CUT  = effR * 5.5;
+    const NEIGHBOR_R = effR * 3.0;
+
+    // ── Phase-dependent parameters with smooth plateau blending ──
+    const s = sub.seg, total = s[0]+s[1]+s[2]+s[3]+s[4];
+    const frac = energy / 100 * total;
+    const meltStart = s[0], meltEnd = s[0]+s[1];
+    const boilStart = s[0]+s[1]+s[2], boilEnd = s[0]+s[1]+s[2]+s[3];
+
+    let K_REP, K_ATTR, GRAVITY;
+    if (frac <= meltStart) {
+        K_REP = 0.55; K_ATTR = 0.30; GRAVITY = 0.05;
+    } else if (frac <= meltEnd) {
+        const f = (frac - meltStart) / (meltEnd - meltStart);
+        K_REP = 0.55 + (0.45-0.55)*f;
+        K_ATTR = 0.30 + (0.14-0.30)*f;
+        GRAVITY = 0.05 + (0.07-0.05)*f;
+    } else if (frac <= boilStart) {
+        K_REP = 0.45; K_ATTR = 0.14; GRAVITY = 0.07;
+    } else if (frac <= boilEnd) {
+        const f = (frac - boilStart) / (boilEnd - boilStart);
+        K_REP = 0.45 + (0.40-0.45)*f;
+        K_ATTR = 0.14 + (0.05-0.14)*f;
+        GRAVITY = 0.07 + (0.01-0.07)*f;
+    } else {
+        K_REP = 0.40; K_ATTR = 0.05; GRAVITY = 0.01;
+    }
+    const SPEED_LIMIT = 22;
+
+    // ── Step 1: thermostat + gravity + rotation damping ──
+    const rotDamp = phase === 'solid' ? 0.82 : phase === 'liquid' ? 0.88 : 0.94;
+    for (const p of particles) {
+        p.vx += -gamma * p.vx + kickStd * gauss();
+        p.vy += -gamma * p.vy + kickStd * gauss();
+        p.vy += GRAVITY;
+        p.av *= rotDamp;
+        p.angle += p.av;
+    }
+
+    // ── Step 2: pair forces ──
+    let totalNeighbors = 0;
+    for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+            const a = particles[i], b = particles[j];
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const d2 = dx*dx + dy*dy;
+            if (d2 > R_CUT * R_CUT) continue;
+            const dist = Math.sqrt(d2);
+            const nx = dx / dist, ny = dy / dist;
+
+            if (dist < NEIGHBOR_R) totalNeighbors++;
+
+            // Triangular well: force = 0 at R_EQ, peaks at R_PEAK, zero at R_CUT
+            let force;
+            if (dist < R_EQ) {
+                // Linear repulsion: 0 at R_EQ, increasing inward
+                force = K_REP * (R_EQ - dist);
+            } else if (dist < R_PEAK) {
+                // Attraction ramp-up: 0 at R_EQ, peaks at R_PEAK
+                force = -K_ATTR * ((dist - R_EQ) / (R_PEAK - R_EQ));
+            } else {
+                // Attraction taper: peak at R_PEAK, 0 at R_CUT
+                force = -K_ATTR * (1 - (dist - R_PEAK) / (R_CUT - R_PEAK));
+            }
+
+            a.vx -= nx * force;
+            a.vy -= ny * force;
+            b.vx += nx * force;
+            b.vy += ny * force;
+
+            // Velocity damping during overlap (kills bouncing)
+            if (dist < R_EQ) {
+                const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+                const dvn = dvx * nx + dvy * ny;
+                if (dvn > 0) {
+                    const damp = dvn * 0.4;
+                    a.vx -= nx * damp; a.vy -= ny * damp;
+                    b.vx += nx * damp; b.vy += ny * damp;
+                }
+            }
+
+            const torque = force * 0.006;
+            a.av += torque;
+            b.av += torque;
+        }
+    }
+
+    // ── Step 2.5: crystalline ordering + liquid ceiling + center merge ──
+    const floorCx = BOX.x + BOX.w / 2;
+    const floorCy = BOX.y + BOX.h - 25;
+
+    if (phase === 'solid') {
+        const sites = buildLattice();
+        if (sites.length > 0) {
+            for (const p of particles) {
+                // Lattice bias: nudge toward nearest site
+                let bestD = Infinity, bestS = null;
+                for (const s of sites) {
+                    const d = (p.x-s.x)*(p.x-s.x) + (p.y-s.y)*(p.y-s.y);
+                    if (d < bestD) { bestD = d; bestS = s; }
+                }
+                if (bestS && bestD < 400) {
+                    const dx = bestS.x - p.x, dy = bestS.y - p.y;
+                    const dist = Math.sqrt(bestD) || 1;
+                    p.vx += (dx/dist) * 0.04 * Math.min(dist/10, 1);
+                    p.vy += (dy/dist) * 0.04 * Math.min(dist/10, 1);
+                }
+                // Center merge: gently pull clumps toward floor center
+                const cdx = floorCx - p.x, cdy = floorCy - p.y;
+                const cdist = Math.sqrt(cdx*cdx + cdy*cdy) || 1;
+                if (cdist > 25) {
+                    p.vx += (cdx/cdist) * 0.025;
+                    p.vy += (cdy/cdist) * 0.025;
+                }
+            }
+        }
+    }
+
+    // ── Liquid ceiling: fades in during melting, out during boiling ──
+    let liquidFactor;
+    if (frac <= meltStart) liquidFactor = 0;
+    else if (frac <= meltEnd) liquidFactor = (frac - meltStart) / (meltEnd - meltStart);
+    else if (frac <= boilStart) liquidFactor = 1;
+    else if (frac <= boilEnd) liquidFactor = 1 - (frac - boilStart) / (boilEnd - boilStart);
+    else liquidFactor = 0;
+
+    if (liquidFactor > 0.01) {
+        const ceilingY = BOX.y + BOX.h * (0.5 - liquidFactor * 0.1);
+        for (const p of particles) {
+            if (p.y < ceilingY) {
+                const push = (ceilingY - p.y) * 0.08 * liquidFactor;
+                p.vy += push;
+                p.vy *= 1 - 0.3 * liquidFactor;
+            }
+        }
+    }
+
+    // ── Step 3: integrate & walls (with anti-stick push) ──
+    let sumSpeed = 0;
+    const br = sub.atomR + 1;
+    const wallPush = 0.15; // gentle push away from walls to prevent sticking
+
+    for (const p of particles) {
+        p.x += p.vx; p.y += p.vy;
+
+        // Anti-stick: push away from near walls
+        if (p.x < BOX.x + br + 4)      p.vx += wallPush;
+        if (p.x > BOX.x + BOX.w - br - 4) p.vx -= wallPush;
+        if (p.y < BOX.y + br + 4)      p.vy += wallPush;
+        if (p.y > BOX.y + BOX.h - br - 4) p.vy -= wallPush;
+
+        // Wall bounce (elastic)
+        if (p.x < BOX.x + br)      { p.x = BOX.x + br;      p.vx = Math.abs(p.vx); }
+        if (p.x > BOX.x + BOX.w - br) { p.x = BOX.x + BOX.w - br; p.vx = -Math.abs(p.vx); }
+        if (p.y < BOX.y + br)      { p.y = BOX.y + br;      p.vy = Math.abs(p.vy); }
+        if (p.y > BOX.y + BOX.h - br) { p.y = BOX.y + BOX.h - br; p.vy = -Math.abs(p.vy); }
+
+        const s = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+        sumSpeed += s;
+        if (s > SPEED_LIMIT) { const sc = SPEED_LIMIT/s; p.vx *= sc; p.vy *= sc; }
+    }
+
+    // ── Phase label: energy-based (accounts for latent heat plateaus) ──
+    if (frac <= meltStart) phase = 'solid';
+    else if (frac <= meltEnd) phase = 'solid';
+    else if (frac <= boilStart) phase = 'liquid';
+    else if (frac <= boilEnd) phase = 'liquid';
+    else phase = 'gas';
+}
+
+// ═══════════════════════════════════════
+//  RENDERING
+// ═══════════════════════════════════════
+function parseRGB(str) {
+    if (str.startsWith('#')) {
+        const n = parseInt(str.slice(1), 16);
+        return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+    }
+    const m = str.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (m) return { r:+m[1], g:+m[2], b:+m[3] };
+    return { r:128, g:128, b:128 };
+}
+function lighten(color, amt) {
+    const {r,g,b} = parseRGB(color);
+    return 'rgb('+Math.min(255,Math.round(r+(255-r)*amt))+','+Math.min(255,Math.round(g+(255-g)*amt))+','+Math.min(255,Math.round(b+(255-b)*amt))+')';
+}
+function darken(color, amt) {
+    const {r,g,b} = parseRGB(color);
+    return 'rgb('+Math.max(0,Math.round(r*(1-amt)))+','+Math.max(0,Math.round(g*(1-amt)))+','+Math.max(0,Math.round(b*(1-amt)))+')';
+}
+
+function drawGlossySphere(x, y, r, color) {
+    // Main body
+    const g = ctx.createRadialGradient(x - r*0.25, y - r*0.3, r*0.05, x + r*0.2, y + r*0.2, r);
+    g.addColorStop(0, lighten(color, 0.7));
+    g.addColorStop(0.35, color);
+    g.addColorStop(0.7, darken(color, 0.25));
+    g.addColorStop(1, darken(color, 0.5));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fill();
+
+    // Subtle outline
+    ctx.strokeStyle = darken(color, 0.35);
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+}
+
+function drawParticle(p) {
+    const speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+    const energyNorm = clamp(speed / 10, 0, 1);
+
+    function energyTint(baseColor) {
+        let r2, g2, b2;
+        if (baseColor.startsWith('#')) {
+            const n = parseInt(baseColor.slice(1), 16);
+            r2 = (n>>16)&255; g2 = (n>>8)&255; b2 = n&255;
+        } else { return baseColor; }
+        // Blend toward warm (orange-red) as energy increases
+        r2 = Math.min(255, Math.round(r2 + (255-r2)*energyNorm*0.6));
+        g2 = Math.max(0, Math.round(g2 * (1 - energyNorm*0.3)));
+        b2 = Math.max(0, Math.round(b2 * (1 - energyNorm*0.5)));
+        return 'rgb('+r2+','+g2+','+b2+')';
+    }
+
+    const tintedColor = energyTint(sub.color);
+    const r = sub.atomR;
+
+    if (sub.mol === 'mono') {
+        drawGlossySphere(p.x, p.y, r, tintedColor);
+        // Glow for fast particles
+        if (speed > 4) {
+            const glowAlpha = Math.min((speed-4)/12, 1) * 0.2;
+            ctx.fillStyle = 'rgba(255,180,60,'+glowAlpha+')';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r+4, 0, Math.PI*2);
+            ctx.fill();
+        }
+    } else if (sub.mol === 'di') {
+        // O₂ — two atoms with bond
+        const bond = r * 1.8;
+        const cos = Math.cos(p.angle), sin = Math.sin(p.angle);
+        const x1 = p.x - cos * bond/2, y1 = p.y - sin * bond/2;
+        const x2 = p.x + cos * bond/2, y2 = p.y + sin * bond/2;
+
+        // Bond
+        ctx.strokeStyle = darken(tintedColor, 0.3);
+        ctx.lineWidth = r * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        drawGlossySphere(x1, y1, r, tintedColor);
+        drawGlossySphere(x2, y2, r, tintedColor);
+        // Glow for fast particles
+        if (speed > 4) {
+            const ga = Math.min((speed-4)/12, 1) * 0.2;
+            ctx.fillStyle = 'rgba(255,180,60,'+ga+')';
+            ctx.beginPath(); ctx.arc(x1, y1, r+4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x2, y2, r+4, 0, Math.PI*2); ctx.fill();
+        }
+    } else if (sub.mol === 'tri') {
+        // H₂O — central O with two H at 104.5°
+        const oR = r;
+        const hR = r * 0.6;
+        const hBond = oR + hR + 1;
+        const halfAngle = 104.5 * Math.PI / 180 / 2;
+        const ox = p.x, oy = p.y;
+
+        // H positions
+        const h1x = ox + (Math.cos(p.angle + halfAngle) * hBond);
+        const h1y = oy + (Math.sin(p.angle + halfAngle) * hBond);
+        const h2x = ox + (Math.cos(p.angle - halfAngle) * hBond);
+        const h2y = oy + (Math.sin(p.angle - halfAngle) * hBond);
+
+        // Bonds
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = hR * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(ox, oy); ctx.lineTo(h1x, h1y);
+        ctx.moveTo(ox, oy); ctx.lineTo(h2x, h2y);
+        ctx.stroke();
+
+        // Oxygen (central, larger) — tinted by energy
+        drawGlossySphere(ox, oy, oR, tintedColor);
+
+        // Hydrogens (smaller, white-ish)
+        drawGlossySphere(h1x, h1y, hR, '#f0f0f0');
+        drawGlossySphere(h2x, h2y, hR, '#f0f0f0');
+
+        // Glow for fast molecules
+        if (speed > 4) {
+            const ga = Math.min((speed-4)/12, 1) * 0.2;
+            ctx.fillStyle = 'rgba(255,180,60,'+ga+')';
+            ctx.beginPath(); ctx.arc(ox, oy, oR+5, 0, Math.PI*2); ctx.fill();
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = '#f0f0ea';
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Thermometer (left of box) ──
+    drawThermometer();
+
+    // ── Container shadow ──
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
+    ctx.beginPath();
+    roundRect(ctx, BOX.x+3, BOX.y+3, BOX.w, BOX.h, 6);
+    ctx.fill();
+
+    // ── Container ──
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    roundRect(ctx, BOX.x, BOX.y, BOX.w, BOX.h, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Floor line
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(BOX.x, BOX.y + BOX.h + 1);
+    ctx.lineTo(BOX.x + BOX.w, BOX.y + BOX.h + 1);
+    ctx.stroke();
+
+    // ── Lid ──
+    const lidH = 12;
+    ctx.fillStyle = '#e8e8e0';
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    roundRect(ctx, BOX.x-1, BOX.y - lidH, BOX.w+2, lidH+2, [4,4,0,0]);
+    ctx.fill();
+    ctx.stroke();
+
+    // ── Sort particles by y for depth ──
+    const sorted = [...particles].sort((a,b) => a.y - b.y);
+    for (const p of sorted) drawParticle(p);
+
+    // ── Container border on top ──
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    roundRect(ctx, BOX.x, BOX.y, BOX.w, BOX.h, 6);
+    ctx.stroke();
+
+    // ── Phase label inside box ──
+    ctx.fillStyle = phase==='solid'?'#1e40af':phase==='liquid'?'#065f46':'#991b1b';
+    ctx.font = 'bold 12px system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(phase.toUpperCase(), BOX.x+BOX.w-14, BOX.y+18);
+}
+
+function drawThermometer() {
+    const tx = BOX.x - 32, ty = BOX.y + 10, tw = 14, th = BOX.h - 20;
+    const tNorm = (temperature - sub.minT) / (sub.maxT - sub.minT);
+
+    // Tube
+    ctx.fillStyle = '#e8e8e0';
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    roundRect(ctx, tx, ty, tw, th, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    // Fill
+    const fillH = th * tNorm;
+    const fillY = ty + th - fillH;
+    if (fillH > 2) {
+        const h = 220 - tNorm*220;
+        ctx.fillStyle = 'hsl('+h+',80%,50%)';
+        ctx.beginPath();
+        roundRect(ctx, tx+2, fillY, tw-4, fillH-2, 5);
+        ctx.fill();
+    }
+
+    // Bulb
+    ctx.fillStyle = 'hsl('+(220-tNorm*220)+',80%,50%)';
+    ctx.beginPath();
+    ctx.arc(tx+tw/2, ty+th+8, 8, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#555';
+    ctx.font = '9px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(temperature)+' K', tx+tw/2, ty-5);
+
+    // Tick marks
+    ctx.fillStyle = '#999';
+    ctx.font = '7px system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    const ticks = [
+        { t: sub.minT, lab: sub.minT+'K' },
+        { t: sub.mp, lab: 'MP' },
+        { t: sub.bp, lab: 'BP' },
+        { t: sub.maxT, lab: sub.maxT+'K' },
+    ];
+    for (const tk of ticks) {
+        const frac = (tk.t - sub.minT) / (sub.maxT - sub.minT);
+        const y = ty + th - frac * th;
+        ctx.fillText(tk.lab, tx-4, y+3);
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(tx, y);
+        ctx.lineTo(tx+5, y);
+        ctx.stroke();
+    }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    if (typeof r==='number') r=[r,r,r,r];
+    const [tl,tr,br,bl] = r.map(v=>Math.min(v,Math.min(w,h)/2));
+    ctx.moveTo(x+tl, y);
+    ctx.lineTo(x+w-tr, y);
+    ctx.quadraticCurveTo(x+w,y, x+w,y+tr);
+    ctx.lineTo(x+w, y+h-br);
+    ctx.quadraticCurveTo(x+w,y+h, x+w-br,y+h);
+    ctx.lineTo(x+bl, y+h);
+    ctx.quadraticCurveTo(x,y+h, x,y+h-bl);
+    ctx.lineTo(x, y+tl);
+    ctx.quadraticCurveTo(x,y, x+tl,y);
+}
+
+// ═══════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════
+const heatSlider  = document.getElementById('heatSlider');
+const heatLabel   = document.getElementById('heatLabel');
+const phasePill   = document.getElementById('phasePill');
+const tempValK    = document.getElementById('tempValK');
+const tempValC    = document.getElementById('tempValC');
+const mpVal       = document.getElementById('mpVal');
+const bpVal       = document.getElementById('bpVal');
+const tcIcon      = document.getElementById('tcIcon');
+const tcIconR     = document.getElementById('tcIconR');
+
+function updateUI() {
+    // Heat slider visual
+    const hf = heatFlow;
+    if (hf > 5) {
+        heatLabel.textContent = 'Heating 🔥';
+        heatLabel.style.color = '#e85d3a';
+    } else if (hf < -5) {
+        heatLabel.textContent = 'Cooling 🧊';
+        heatLabel.style.color = '#4a90d9';
+    } else {
+        heatLabel.textContent = 'Heat / Cool';
+        heatLabel.style.color = '#999';
+    }
+
+    // Icons
+    tcIcon.textContent = hf < -5 ? '🧊' : '🔄';
+    tcIconR.textContent = hf > 5 ? '🔥' : '🔄';
+
+    // Phase
+    phasePill.textContent = phase.charAt(0).toUpperCase() + phase.slice(1);
+    phasePill.className = 'phase-pill ' + phase;
+
+    // Readouts
+    tempValK.textContent = Math.round(temperature);
+    tempValC.textContent = Math.round(temperature - 273.15);
+    mpVal.textContent = sub.mp + ' K';
+    bpVal.textContent = sub.bp + ' K';
+}
+
+// ═══════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════
+heatSlider.addEventListener('input', () => {
+    heatFlow = parseFloat(heatSlider.value);
+});
+// Return to neutral when released
+heatSlider.addEventListener('change', () => {
+    heatFlow = 0;
+    heatSlider.value = 0;
+    updateUI();
+});
+
+document.getElementById('substancePick').addEventListener('click', e => {
+    const btn = e.target.closest('.sub-btn');
+    if (!btn) return;
+    const key = btn.getAttribute('data-sub');
+    if (key === subKey) return;
+    subKey = key;
+    sub = SUBS[key];
+    document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    temperature = clamp(temperature, sub.minT + 2, sub.maxT - 2);
+    energy = tempToEnergy(temperature, sub);
+    heatFlow = 0;
+    heatSlider.value = 0;
+    initParticles();
+    updateUI();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+    temperature = sub.mp - 10;
+    if (temperature < sub.minT) temperature = sub.minT + 3;
+    energy = tempToEnergy(temperature, sub);
+    heatFlow = 0;
+    heatSlider.value = 0;
+    initParticles();
+    updateUI();
+});
+
+// ═══════════════════════════════════════
+//  INIT & LOOP
+// ═══════════════════════════════════════
+let af;
+function tick() {
+    updatePhysics();
+    draw();
+    updateUI();
+    af = requestAnimationFrame(tick);
+}
+
+initParticles();
+temperature = sub.mp - 10;
+if (temperature < sub.minT) temperature = sub.minT + 3;
+energy = tempToEnergy(temperature, sub);
+updateUI();
+updateUI();
+tick();
+
+window.addEventListener('beforeunload', () => { if (af) cancelAnimationFrame(af); });
+</script>
+</body>
+</html>
