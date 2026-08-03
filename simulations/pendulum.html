@@ -4,73 +4,705 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendulum Lab — CommonLab</title>
-    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, and gravity.">
+    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, and gravity with an interactive pendulum with adjustable parameters.">
     <link rel="stylesheet" href="../main.css">
+    <style>
+        #pendulumCanvas { width: 100%; max-width: 700px; height: auto; aspect-ratio: 700 / 480; display: block; border-radius: 8px; background: #fafbfc; cursor: default; }
+
+        .pend-readouts {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e9ecef;
+        }
+        .pend-readout {
+            text-align: center;
+            padding: 0.6rem 0.4rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .pend-readout .pr-num {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            font-variant-numeric: tabular-nums;
+        }
+        .pend-readout .pr-lbl {
+            font-size: 0.7rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 0.15rem;
+        }
+        .pend-readout.highlight .pr-num { color: #4a6fa5; }
+
+        .pend-button-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            padding-top: 0.5rem;
+            border-top: 1px solid #e9ecef;
+        }
+        .pend-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            font-family: inherit;
+        }
+        .pend-btn:hover { transform: translateY(-1px); }
+        .pend-btn:active { transform: translateY(0); }
+        .pend-btn-pause { background: #4a6fa5; color: #fff; }
+        .pend-btn-pause:hover { background: #3b5d8f; }
+        .pend-btn-reset { background: #e9ecef; color: #495057; }
+        .pend-btn-reset:hover { background: #d1d5db; }
+        .pend-btn-trace { background: #f0f4fa; color: #4a6fa5; }
+        .pend-btn-trace:hover { background: #dbeafe; }
+        .pend-btn-trace.on { background: #4a6fa5; color: #fff; }
+
+        .energy-bars {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
+        }
+        .energy-bar-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .energy-bar-outer {
+            width: 24px;
+            height: 80px;
+            background: #e9ecef;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .energy-bar-inner {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 4px;
+            transition: height 0.1s;
+        }
+        .energy-bar-inner.ke { background: linear-gradient(to top, #e05252, #f09060); }
+        .energy-bar-inner.pe { background: linear-gradient(to top, #4a6fa5, #7ba3d6); }
+        .energy-bar-lbl {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .energy-bar-val {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        .energy-bar-total {
+            font-size: 0.68rem;
+            color: #4a6fa5;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .pend-readouts { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
 </head>
 <body>
 
-    <header class="site-header">
-        <div class="container nav-container">
-            <a href="../index.html" class="logo" aria-label="CommonLab Home">
-                <span class="logo-icon">&#9670;</span>
-                <span class="logo-text">CommonLab</span>
-            </a>
-            <nav class="primary-nav" aria-label="Main navigation">
-                <ul>
-                    <li><a href="../index.html#simulations">Simulations</a></li>
-                    <li><a href="../index.html#about">About</a></li>
-                    <li><a href="../index.html#contact">Contact</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+<header class="site-header">
+    <div class="container nav-container">
+        <a href="../index.html" class="logo" aria-label="CommonLab Home">
+            <span class="logo-icon">&#9670;</span>
+            <span class="logo-text">CommonLab</span>
+        </a>
+        <nav class="primary-nav" aria-label="Main navigation">
+            <ul>
+                <li><a href="../index.html#simulations">Simulations</a></li>
+                <li><a href="../index.html#about">About</a></li>
+                <li><a href="../index.html#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
 
-    <main>
-        <div class="sim-page-header">
-            <div class="container">
-                <h1>Pendulum Lab</h1>
-                <p>Explore how length, mass, and gravity affect a pendulum's period.</p>
-            </div>
+<main>
+    <div class="sim-page-header">
+        <div class="container">
+            <h1>Pendulum Lab</h1>
+            <p>Explore how length, mass, gravity, and amplitude affect a pendulum's period. Drag the bob to set the angle, or use the slider.</p>
         </div>
+    </div>
 
-        <section class="sim-canvas-area">
-            <div class="container">
-                <div class="sim-placeholder">
-                    <span class="placeholder-icon">&#126;</span>
-                    <p>Pendulum simulation coming soon.</p>
-                    <p style="font-size:0.85rem;">Interactive canvas with adjustable length, mass, and angle.</p>
+    <section class="sim-canvas-area">
+        <div class="container sim-layout">
+
+            <!-- Left: Canvas + Controls -->
+            <div class="sim-main">
+                <div class="canvas-wrapper">
+                    <canvas id="pendulumCanvas" width="700" height="480"></canvas>
                 </div>
 
-                <div class="sim-controls">
-                    <label>
-                        Length
-                        <input type="range" min="50" max="200" value="120" disabled>
-                    </label>
-                    <label>
-                        Mass
-                        <input type="range" min="1" max="10" value="5" disabled>
-                    </label>
-                    <label>
-                        Gravity
-                        <input type="range" min="1" max="20" value="9.8" step="0.1" disabled>
-                    </label>
-                    <label>
-                        Angle
-                        <input type="range" min="5" max="80" value="30" disabled>
-                    </label>
+                <div class="controls-panel">
+                    <div class="control-row">
+                        <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">L</span>
+                        <input type="range" id="lengthSlider" min="0.3" max="3.0" value="1.2" step="0.05">
+                        <span class="control-value" id="lengthValue" style="min-width:72px;">1.20 m</span>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">m</span>
+                        <input type="range" id="massSlider" min="0.1" max="5.0" value="1.0" step="0.1">
+                        <span class="control-value" id="massValue" style="min-width:72px;">1.0 kg</span>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">g</span>
+                        <input type="range" id="gravitySlider" min="0.5" max="20.0" value="9.8" step="0.1">
+                        <span class="control-value" id="gravityValue" style="min-width:72px;">9.8 m/s²</span>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">&theta;</span>
+                        <input type="range" id="angleSlider" min="1" max="85" value="30" step="0.5">
+                        <span class="control-value" id="angleValue" style="min-width:72px;">30&deg;</span>
+                    </div>
+
+                    <div class="pend-readouts">
+                        <div class="pend-readout highlight">
+                            <div class="pr-num" id="periodReadout">2.20</div>
+                            <div class="pr-lbl">Period (s)</div>
+                        </div>
+                        <div class="pend-readout">
+                            <div class="pr-num" id="freqReadout">0.45</div>
+                            <div class="pr-lbl">Frequency (Hz)</div>
+                        </div>
+                        <div class="pend-readout">
+                            <div class="pr-num" id="angleReadout">30.0</div>
+                            <div class="pr-lbl">Angle (&deg;)</div>
+                        </div>
+                        <div class="pend-readout">
+                            <div class="pr-num" id="speedReadout">0.00</div>
+                            <div class="pr-lbl">Max Speed (m/s)</div>
+                        </div>
+                    </div>
+
+                    <div class="pend-button-row">
+                        <button class="pend-btn pend-btn-pause" id="pauseBtn">Pause</button>
+                        <button class="pend-btn pend-btn-reset" id="resetBtn">Reset</button>
+                        <button class="pend-btn pend-btn-trace on" id="traceBtn">Show Trace</button>
+                        <div style="flex:1"></div>
+                        <div class="energy-bars">
+                            <div class="energy-bar-wrap">
+                                <div class="energy-bar-lbl">KE</div>
+                                <div class="energy-bar-outer"><div class="energy-bar-inner ke" id="keBar" style="height:0%"></div></div>
+                                <div class="energy-bar-val" id="keVal">0.00</div>
+                            </div>
+                            <div class="energy-bar-wrap">
+                                <div class="energy-bar-lbl">PE</div>
+                                <div class="energy-bar-outer"><div class="energy-bar-inner pe" id="peBar" style="height:0%"></div></div>
+                                <div class="energy-bar-val" id="peVal">0.00</div>
+                            </div>
+                            <div class="energy-bar-wrap">
+                                <div class="energy-bar-lbl">Tot</div>
+                                <div class="energy-bar-total" id="totalEVal">—</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <a href="../index.html#simulations" class="sim-back-link">Back to Simulations</a>
             </div>
-        </section>
-    </main>
 
-    <footer class="site-footer">
-        <div class="container footer-container">
-            <p>&copy; 2026 CommonLab. Free science simulations for everyone.</p>
+            <!-- Right: Equations & Info -->
+            <aside class="sim-sidebar">
+                <div class="equation-card">
+                    <h3>Period of a Pendulum</h3>
+                    <div class="equation-formula">T = 2&pi;&radic;(L/g)</div>
+                    <p class="eq-explanation">
+                        For small angles (&lt; 15&deg;), the period depends only on length and
+                        gravity &mdash; not on mass or amplitude. This is <strong>isochronism</strong>.
+                    </p>
+                </div>
+                <div class="equation-card">
+                    <h3>Energy</h3>
+                    <div class="equation-formula">E = &frac12;mv² + mgh</div>
+                    <p class="eq-explanation">
+                        Energy continuously converts between kinetic and potential.
+                        Total mechanical energy is conserved (assuming no damping).
+                    </p>
+                </div>
+                <div class="equation-card">
+                    <h3>Large-Angle Correction</h3>
+                    <div class="equation-formula">T &asymp; 2&pi;&radic;(L/g) · (1 + &theta;&sup2;/16)</div>
+                    <p class="eq-explanation">
+                        For angles above ~15&deg;, the small-angle approximation breaks down.
+                        The true period increases slightly with amplitude.
+                    </p>
+                </div>
+                <div class="equation-card">
+                    <h3>Explore</h3>
+                    <p class="eq-explanation">
+                        <strong>Try this:</strong> Set a large angle (&gt; 60&deg;) and watch
+                        the period readout. Compare the actual period with the small-angle
+                        formula &mdash; notice the difference!
+                    </p>
+                    <p class="eq-explanation" style="margin-top:0.5rem;">
+                        Drag the bob to change the angle. Change gravity to see how a
+                        pendulum would swing on the Moon (1.6 m/s&sup2;) or Jupiter (24.8 m/s&sup2;).
+                    </p>
+                </div>
+            </aside>
+
         </div>
-    </footer>
 
-    <script src="../index.js"></script>
+        <div class="container" style="margin-top: 1.5rem; text-align: center;">
+            <a href="../index.html#simulations" class="sim-back-link">← Back to Simulations</a>
+        </div>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <div class="container footer-container">
+        <p>&copy; 2026 CommonLab. Free science simulations for everyone.</p>
+    </div>
+</footer>
+
+<script src="../index.js"></script>
+<script>
+'use strict';
+
+// ── Constants ──
+const PIVOT_X = 350, PIVOT_Y = 80;
+const PX_PER_METER = 130;
+const BOBS_PER_KG = 16;
+const DAMPING = 0.9995;
+
+// ── State ──
+let length = 1.2;
+let mass = 1.0;
+let gravity = 9.8;
+let angleDeg = 30;
+let angle = angleDeg * Math.PI / 180;
+let angularVel = 0;
+let paused = false;
+let showTrace = true;
+let tracePoints = [];
+let periodTimer = 0;
+let lastSign = null;
+let measuredPeriod = null;
+let _crossingTimes = [];
+
+// ── DOM ──
+const canvas = document.getElementById('pendulumCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const lengthSlider  = document.getElementById('lengthSlider');
+const massSlider    = document.getElementById('massSlider');
+const gravitySlider = document.getElementById('gravitySlider');
+const angleSlider   = document.getElementById('angleSlider');
+const lengthValue   = document.getElementById('lengthValue');
+const massValue     = document.getElementById('massValue');
+const gravityValue  = document.getElementById('gravityValue');
+const angleValue    = document.getElementById('angleValue');
+const pauseBtn      = document.getElementById('pauseBtn');
+const resetBtn      = document.getElementById('resetBtn');
+const traceBtn      = document.getElementById('traceBtn');
+
+const periodReadout = document.getElementById('periodReadout');
+const freqReadout   = document.getElementById('freqReadout');
+const angleReadout  = document.getElementById('angleReadout');
+const speedReadout  = document.getElementById('speedReadout');
+const keBar = document.getElementById('keBar');
+const peBar = document.getElementById('peBar');
+const keVal = document.getElementById('keVal');
+const peVal = document.getElementById('peVal');
+const totalEVal = document.getElementById('totalEVal');
+
+// ── Bob position ──
+function bobPos() {
+    const px = PIVOT_X + Math.sin(angle) * length * PX_PER_METER;
+    const py = PIVOT_Y + Math.cos(angle) * length * PX_PER_METER;
+    return { x: px, y: py };
+}
+
+function bobPixelRadius() {
+    return 12 + mass * BOBS_PER_KG;
+}
+
+// ── Energy ──
+function computeEnergy() {
+    const bob = bobPos();
+    const bobBaseY = PIVOT_Y + length * PX_PER_METER;
+    const h = (bobBaseY - bob.y) / PX_PER_METER;
+    const speed = Math.abs(angularVel) * length;
+    const ke = 0.5 * mass * speed * speed;
+    const pe = mass * gravity * h;
+    return { ke, pe, total: ke + pe };
+}
+
+// ── Period tracking using zero-crossings ──
+function trackPeriod(dt) {
+    const sign = Math.sign(angle);
+    if (lastSign !== null && sign !== 0 && sign !== lastSign) {
+        _crossingTimes.push(periodTimer);
+        if (_crossingTimes.length > 20) _crossingTimes.shift();
+        if (_crossingTimes.length >= 3) {
+            // Average of last few half-periods × 2
+            const diffs = [];
+            for (let i = 1; i < _crossingTimes.length; i += 2) {
+                if (i + 1 < _crossingTimes.length) {
+                    diffs.push((_crossingTimes[i+1] - _crossingTimes[i-1]));
+                }
+            }
+            if (diffs.length > 0) {
+                measuredPeriod = diffs.reduce((a,b) => a+b, 0) / diffs.length;
+            }
+        }
+    }
+    if (sign !== 0) lastSign = sign;
+    periodTimer += dt;
+}
+
+// ── Physics ──
+function updatePhysics(dt) {
+    if (paused) return;
+
+    // RK4-style: sub-step for accuracy
+    const subSteps = 4;
+    const subDt = dt / subSteps;
+
+    for (let s = 0; s < subSteps; s++) {
+        const alpha = -(gravity / length) * Math.sin(angle);
+        angularVel += alpha * subDt;
+        angularVel *= DAMPING;
+        angle += angularVel * subDt;
+    }
+
+    trackPeriod(dt);
+
+    // Clamp energy (prevent numerical runaway)
+    if (Math.abs(angularVel) > 15) angularVel = 15 * Math.sign(angularVel);
+}
+
+// ── Drawing ──
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = '#fafbfc';
+    ctx.fillRect(0, 0, W, H);
+
+    // Ceiling
+    ctx.fillStyle = '#6b5230';
+    ctx.fillRect(0, PIVOT_Y - 14, W, 18);
+    ctx.fillStyle = '#8b7355';
+    ctx.fillRect(0, PIVOT_Y - 14, W, 3);
+    ctx.fillStyle = '#4d3724';
+    ctx.fillRect(0, PIVOT_Y + 2, W, 2);
+
+    // Reference line (vertical at rest)
+    ctx.setLineDash([4, 6]);
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PIVOT_X, PIVOT_Y);
+    ctx.lineTo(PIVOT_X, PIVOT_Y + length * PX_PER_METER);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Angle arc
+    if (Math.abs(angleDeg) > 1) {
+        const arcR = 55;
+        ctx.strokeStyle = 'rgba(100,100,100,0.25)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(PIVOT_X, PIVOT_Y, arcR, -Math.PI/2, -Math.PI/2 - angle, angle < 0);
+        ctx.stroke();
+        const midA = -Math.PI/2 - angle/2;
+        ctx.fillStyle = 'rgba(80,80,80,0.4)';
+        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(Math.abs(angleDeg).toFixed(0) + '\u00B0', PIVOT_X + (arcR + 20) * Math.cos(midA), PIVOT_Y + (arcR + 20) * Math.sin(midA));
+        // Tick marks on arc
+        for (let a = -85; a <= 85; a += 15) {
+            if (Math.abs(angleDeg) < Math.abs(a) + 3) continue;
+            const ta = -Math.PI/2 - a * Math.PI/180;
+            ctx.beginPath();
+            ctx.arc(PIVOT_X, PIVOT_Y, arcR - 5, ta - 0.02, ta + 0.02);
+            ctx.stroke();
+        }
+    }
+
+    // Trace drawn behind everything
+    if (showTrace && tracePoints.length > 1) {
+        ctx.strokeStyle = 'rgba(74, 111, 165, 0.25)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        for (let i = 0; i < tracePoints.length; i++) {
+            i === 0 ? ctx.moveTo(tracePoints[i].x, tracePoints[i].y) : ctx.lineTo(tracePoints[i].x, tracePoints[i].y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Fade trace dots
+        for (let i = 0; i < tracePoints.length; i += Math.max(1, Math.floor(tracePoints.length / 60))) {
+            const alpha = 0.08 + 0.22 * (i / tracePoints.length);
+            ctx.fillStyle = 'rgba(74, 111, 165, ' + alpha.toFixed(2) + ')';
+            ctx.beginPath();
+            ctx.arc(tracePoints[i].x, tracePoints[i].y, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // String
+    const bob = bobPos();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(PIVOT_X, PIVOT_Y);
+    ctx.lineTo(bob.x, bob.y);
+    ctx.stroke();
+
+    // String highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PIVOT_X + 1, PIVOT_Y);
+    ctx.lineTo(bob.x + 1, bob.y);
+    ctx.stroke();
+
+    // Pivot bolt
+    const boltGrad = ctx.createRadialGradient(PIVOT_X - 2, PIVOT_Y - 1, 1, PIVOT_X, PIVOT_Y, 9);
+    boltGrad.addColorStop(0, '#999');
+    boltGrad.addColorStop(0.6, '#555');
+    boltGrad.addColorStop(1, '#222');
+    ctx.fillStyle = boltGrad;
+    ctx.beginPath();
+    ctx.arc(PIVOT_X, PIVOT_Y, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.arc(PIVOT_X - 2, PIVOT_Y - 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bob gradient
+    const bobR = bobPixelRadius();
+    const bobGrad = ctx.createRadialGradient(bob.x - bobR*0.3, bob.y - bobR*0.35, bobR*0.05, bob.x, bob.y, bobR);
+    bobGrad.addColorStop(0, '#e8d5b7');
+    bobGrad.addColorStop(0.4, '#c4934a');
+    bobGrad.addColorStop(0.7, '#8b5e2b');
+    bobGrad.addColorStop(1, '#5a3612');
+    ctx.fillStyle = bobGrad;
+    ctx.beginPath();
+    ctx.arc(bob.x, bob.y, bobR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bob highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath();
+    ctx.arc(bob.x - bobR*0.25, bob.y - bobR*0.3, bobR*0.32, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Speed indicator (small arrow on bob)
+    const speed = Math.abs(angularVel * length);
+    if (speed > 0.02) {
+        const vDir = Math.sign(angularVel);
+        const arrowX = bob.x + vDir * (bobR + 5);
+        const arrowY = bob.y;
+        ctx.fillStyle = 'rgba(200,60,60,0.6)';
+        ctx.font = 'bold 9px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 16);
+        // Mini arrow
+        ctx.strokeStyle = 'rgba(200,60,60,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(arrowX - vDir * 10, arrowY);
+        ctx.lineTo(arrowX, arrowY);
+        ctx.stroke();
+    }
+
+    // Pause overlay
+    if (paused) {
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.font = 'bold 24px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('PAUSED', W/2, H/2 + 30);
+    }
+}
+
+// ── Update UI readouts ──
+function updateUI() {
+    const deg = angle * 180 / Math.PI;
+    angleDeg = deg;
+    const speed = Math.abs(angularVel * length);
+    let period;
+    if (measuredPeriod !== null) {
+        period = measuredPeriod;
+    } else {
+        // Small-angle formula
+        period = 2 * Math.PI * Math.sqrt(length / gravity);
+    }
+    const freq = 1 / period;
+    const e = computeEnergy();
+    const maxPE = mass * gravity * length;
+
+    periodReadout.textContent = period.toFixed(2);
+    freqReadout.textContent = freq.toFixed(2);
+    angleReadout.textContent = Math.abs(deg).toFixed(1);
+    speedReadout.textContent = speed.toFixed(2);
+
+    const kePct = Math.min(100, (e.ke / maxPE) * 100);
+    const pePct = Math.min(100, (e.pe / maxPE) * 100);
+    keBar.style.height = kePct.toFixed(0) + '%';
+    peBar.style.height = pePct.toFixed(0) + '%';
+    keVal.textContent = e.ke.toFixed(3) + ' J';
+    peVal.textContent = e.pe.toFixed(3) + ' J';
+    totalEVal.textContent = e.total.toFixed(3) + ' J';
+}
+
+// ── Slider handlers ──
+lengthSlider.addEventListener('input', () => {
+    length = +lengthSlider.value;
+    lengthValue.textContent = length.toFixed(2) + ' m';
+    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
+});
+massSlider.addEventListener('input', () => {
+    mass = +massSlider.value;
+    massValue.textContent = mass.toFixed(1) + ' kg';
+});
+gravitySlider.addEventListener('input', () => {
+    gravity = +gravitySlider.value;
+    gravityValue.textContent = gravity.toFixed(1) + ' m/s\u00B2';
+    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
+});
+angleSlider.addEventListener('input', () => {
+    const deg = +angleSlider.value;
+    angle = deg * Math.PI / 180;
+    angleValue.innerHTML = deg + '&deg;';
+    angularVel = 0;
+    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
+    tracePoints = [];
+});
+
+pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+});
+resetBtn.addEventListener('click', () => {
+    angularVel = 0;
+    const deg = +angleSlider.value;
+    angle = deg * Math.PI / 180;
+    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
+    tracePoints = [];
+});
+traceBtn.addEventListener('click', () => {
+    showTrace = !showTrace;
+    traceBtn.textContent = showTrace ? 'Show Trace' : 'Hide Trace';
+    traceBtn.classList.toggle('on', showTrace);
+    if (!showTrace) tracePoints = [];
+});
+
+// ── Bob drag (mouse) ──
+let dragging = false;
+function getCanvasPos(e) {
+    const r = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - r.left) * (W / r.width),
+        y: (e.clientY - r.top) * (H / r.height)
+    };
+}
+function isNearBob(cx, cy) {
+    const bob = bobPos();
+    const dist = Math.sqrt((cx - bob.x)*(cx - bob.x) + (cy - bob.y)*(cy - bob.y));
+    return dist < bobPixelRadius() + 14;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+    const pos = getCanvasPos(e);
+    if (isNearBob(pos.x, pos.y)) {
+        dragging = true;
+        paused = true;
+        pauseBtn.textContent = 'Resume';
+        canvas.style.cursor = 'grabbing';
+        canvas.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    }
+});
+canvas.addEventListener('pointermove', (e) => {
+    if (dragging) {
+        const pos = getCanvasPos(e);
+        const dx = pos.x - PIVOT_X;
+        const dy = pos.y - PIVOT_Y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        // Clamp to roughly the string length
+        const maxDist = length * PX_PER_METER;
+        const clampedDist = Math.min(dist, maxDist * 0.98);
+        const newAngle = Math.atan2(dx, dy);
+        angle = -newAngle;
+        const deg = angle * 180 / Math.PI;
+        angleSlider.value = Math.max(1, Math.min(85, Math.abs(Math.round(deg))));
+        angleValue.innerHTML = Math.abs(deg).toFixed(0) + '&deg;';
+        angularVel = 0;
+        _crossingTimes = [];
+        measuredPeriod = null;
+        periodTimer = 0;
+        lastSign = null;
+        tracePoints = [];
+        e.preventDefault();
+    } else if (!paused) {
+        const pos = getCanvasPos(e);
+        canvas.style.cursor = isNearBob(pos.x, pos.y) ? 'grab' : 'default';
+    }
+});
+canvas.addEventListener('pointerup', () => {
+    dragging = false;
+    canvas.style.cursor = 'default';
+});
+canvas.addEventListener('pointercancel', () => {
+    dragging = false;
+    canvas.style.cursor = 'default';
+});
+
+// ── Animation ──
+let lastTime = 0, animId = null;
+const MAX_TRACE = 250;
+
+function tick(ts) {
+    if (!lastTime) lastTime = ts;
+    let dt = (ts - lastTime) / 1000;
+    lastTime = ts;
+    if (dt > 0.05) dt = 0.016;
+
+    updatePhysics(dt);
+
+    // Record trace point (slightly filter: every 3rd frame)
+    if (showTrace && !paused && Math.abs(angularVel) > 0.01) {
+        const bob = bobPos();
+        tracePoints.push({ x: bob.x, y: bob.y });
+        if (tracePoints.length > MAX_TRACE) tracePoints = tracePoints.slice(-MAX_TRACE);
+    }
+
+    draw();
+    updateUI();
+    animId = requestAnimationFrame(tick);
+}
+
+// ── Init ──
+updateUI();
+animId = requestAnimationFrame(tick);
+
+window.addEventListener('beforeunload', () => { if (animId) cancelAnimationFrame(animId); });
+</script>
 </body>
 </html>
