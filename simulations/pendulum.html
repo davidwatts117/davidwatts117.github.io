@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendulum Lab — CommonLab</title>
-    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, and gravity with an interactive pendulum with adjustable parameters.">
+    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, drag, and energy conservation with line charts.">
     <link rel="stylesheet" href="../main.css">
     <style>
         #pendulumCanvas { width: 100%; max-width: 700px; height: auto; aspect-ratio: 700 / 480; display: block; border-radius: 8px; background: #fafbfc; cursor: default; }
@@ -44,6 +44,7 @@
             gap: 0.75rem;
             flex-wrap: wrap;
             padding-top: 0.5rem;
+            align-items: center;
             border-top: 1px solid #e9ecef;
         }
         .pend-btn {
@@ -66,52 +67,53 @@
         .pend-btn-trace:hover { background: #dbeafe; }
         .pend-btn-trace.on { background: #4a6fa5; color: #fff; }
 
-        .energy-bars {
-            display: flex;
-            gap: 0.5rem;
-            padding-top: 0.5rem;
+        /* Energy Graph Styles */
+        .energy-graph-container {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e9ecef;
         }
-        .energy-bar-wrap {
-            flex: 1;
+        .graph-header {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            gap: 0.25rem;
+            margin-bottom: 0.4rem;
         }
-        .energy-bar-outer {
-            width: 24px;
-            height: 80px;
-            background: #e9ecef;
-            border-radius: 4px;
-            position: relative;
-            overflow: hidden;
-        }
-        .energy-bar-inner {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            border-radius: 4px;
-            transition: height 0.1s;
-        }
-        .energy-bar-inner.ke { background: linear-gradient(to top, #e05252, #f09060); }
-        .energy-bar-inner.pe { background: linear-gradient(to top, #4a6fa5, #7ba3d6); }
-        .energy-bar-lbl {
-            font-size: 0.65rem;
+        .graph-title {
+            font-size: 0.8rem;
             font-weight: 700;
-            color: #6c757d;
+            color: #1a1a2e;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        .energy-bar-val {
+        .graph-legend {
+            display: flex;
+            gap: 0.6rem;
             font-size: 0.7rem;
             font-weight: 600;
-            color: #1a1a2e;
         }
-        .energy-bar-total {
-            font-size: 0.68rem;
-            color: #4a6fa5;
-            font-weight: 700;
+        .legend-item { display: flex; align-items: center; gap: 0.25rem; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .legend-dot.ke { background: #e05252; }
+        .legend-dot.pe { background: #4a6fa5; }
+        .legend-dot.thermal { background: #d97706; }
+        .legend-dot.total { background: #22c55e; }
+
+        .control-hint {
+            margin: -0.25rem 0 0.5rem 2.4rem;
+            font-size: 0.7rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        .control-hint strong { color: #495057; }
+
+        #energyGraphCanvas {
+            width: 100%;
+            height: 150px;
+            display: block;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
         }
 
         @media (max-width: 768px) {
@@ -141,7 +143,7 @@
     <div class="sim-page-header">
         <div class="container">
             <h1>Pendulum Lab</h1>
-            <p>Explore how length, mass, gravity, and amplitude affect a pendulum's period. Drag the bob to set the angle, or use the slider.</p>
+            <p>Explore how length, mass, gravity, drag, and amplitude affect a pendulum's motion and energy transformation.</p>
         </div>
     </div>
 
@@ -165,6 +167,12 @@
                         <input type="range" id="massSlider" min="0.1" max="5.0" value="1.0" step="0.1">
                         <span class="control-value" id="massValue" style="min-width:72px;">1.0 kg</span>
                     </div>
+                    <div class="control-row">
+                        <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">Cd</span>
+                        <input type="range" id="dragSlider" min="0" max="0.94" value="0.47" step="0.01">
+                        <span class="control-value" id="dragValue" style="min-width:72px;">0.47</span>
+                    </div>
+                    <p class="control-hint">Drag: <strong>0.00</strong> = ideal pendulum &middot; <strong>0.47</strong> = sphere in air &middot; <strong>0.94</strong> = 2&times; air drag</p>
                     <div class="control-row">
                         <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">g</span>
                         <input type="range" id="gravitySlider" min="0.5" max="20.0" value="9.8" step="0.1">
@@ -199,23 +207,19 @@
                         <button class="pend-btn pend-btn-pause" id="pauseBtn">Pause</button>
                         <button class="pend-btn pend-btn-reset" id="resetBtn">Reset</button>
                         <button class="pend-btn pend-btn-trace on" id="traceBtn">Show Trace</button>
-                        <div style="flex:1"></div>
-                        <div class="energy-bars">
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">KE</div>
-                                <div class="energy-bar-outer"><div class="energy-bar-inner ke" id="keBar" style="height:0%"></div></div>
-                                <div class="energy-bar-val" id="keVal">0.00</div>
-                            </div>
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">PE</div>
-                                <div class="energy-bar-outer"><div class="energy-bar-inner pe" id="peBar" style="height:0%"></div></div>
-                                <div class="energy-bar-val" id="peVal">0.00</div>
-                            </div>
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">Tot</div>
-                                <div class="energy-bar-total" id="totalEVal">—</div>
+                    </div>
+
+                    <div class="energy-graph-container">
+                        <div class="graph-header">
+                            <span class="graph-title">Energy vs. Time</span>
+                            <div class="graph-legend">
+                                <span class="legend-item"><span class="legend-dot ke"></span> K</span>
+                                <span class="legend-item"><span class="legend-dot pe"></span> P</span>
+                                <span class="legend-item"><span class="legend-dot thermal"></span> Thermal</span>
+                                <span class="legend-item"><span class="legend-dot total"></span> Total</span>
                             </div>
                         </div>
+                        <canvas id="energyGraphCanvas" width="650" height="150"></canvas>
                     </div>
                 </div>
             </div>
@@ -231,11 +235,10 @@
                     </p>
                 </div>
                 <div class="equation-card">
-                    <h3>Energy</h3>
-                    <div class="equation-formula">E = &frac12;mv² + mgh</div>
+                    <h3>Energy Dynamics</h3>
+                    <div class="equation-formula">E_tot = K + P + E_thermal</div>
                     <p class="eq-explanation">
-                        Energy continuously converts between kinetic and potential.
-                        Total mechanical energy is conserved (assuming no damping).
+                        Energy transitions smoothly between Kinetic (K) and Potential (P). Air drag continuously dissipates mechanical energy into Thermal energy, conserving total energy overall.
                     </p>
                 </div>
                 <div class="equation-card">
@@ -249,13 +252,7 @@
                 <div class="equation-card">
                     <h3>Explore</h3>
                     <p class="eq-explanation">
-                        <strong>Try this:</strong> Set a large angle (&gt; 60&deg;) and watch
-                        the period readout. Compare the actual period with the small-angle
-                        formula &mdash; notice the difference!
-                    </p>
-                    <p class="eq-explanation" style="margin-top:0.5rem;">
-                        Drag the bob to change the angle. Change gravity to see how a
-                        pendulum would swing on the Moon (1.6 m/s&sup2;) or Jupiter (24.8 m/s&sup2;).
+                        <strong>Try this:</strong> Set the drag coefficient to $C_d = 0.00$ for an ideal, non-damped pendulum and watch K and P swap forever with a flat Total line. Raise it to $0.47$ (a real sphere in air) or $0.94$ (twice normal air drag) to watch Thermal climb while Total stays flat &mdash; energy is conserved, just converted.
                     </p>
                 </div>
             </aside>
@@ -281,16 +278,17 @@
 // ── Constants ──
 const PIVOT_X = 350, PIVOT_Y = 80;
 const PX_PER_METER = 130;
-const BOBS_PER_KG = 16;
-const DAMPING = 0.9995;
+const AIR_DENSITY = 1.225; // kg/m^3 atmospheric air density
 
 // ── State ──
 let length = 1.2;
 let mass = 1.0;
+let cd = 0.47; // Standard sphere drag coefficient
 let gravity = 9.8;
 let angleDeg = 30;
 let angle = angleDeg * Math.PI / 180;
 let angularVel = 0;
+let thermalEnergy = 0;
 let paused = false;
 let showTrace = true;
 let tracePoints = [];
@@ -299,19 +297,36 @@ let lastSign = null;
 let measuredPeriod = null;
 let _crossingTimes = [];
 
+// Energy history buffer for the line graph.
+// Samples are trimmed by TIME (see updatePhysics), not by a fixed point count:
+// a fixed count would silently amputate the left side of the trace long before
+// the newest sample had travelled to the right edge of the window.
+const MAX_GRAPH_POINTS = 6000; // safety cap only
+const GRAPH_WINDOW_S = 20; // time span shown on the x-axis
+const GRAPH_TRIM_PAD_S = 1; // extra seconds kept just off-screen
+let energyHistory = [];
+let simTime = 0;
+
 // ── DOM ──
 const canvas = document.getElementById('pendulumCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
+const graphCanvas = document.getElementById('energyGraphCanvas');
+const gCtx = graphCanvas.getContext('2d');
+
 const lengthSlider  = document.getElementById('lengthSlider');
 const massSlider    = document.getElementById('massSlider');
+const dragSlider    = document.getElementById('dragSlider');
 const gravitySlider = document.getElementById('gravitySlider');
 const angleSlider   = document.getElementById('angleSlider');
+
 const lengthValue   = document.getElementById('lengthValue');
 const massValue     = document.getElementById('massValue');
+const dragValue     = document.getElementById('dragValue');
 const gravityValue  = document.getElementById('gravityValue');
 const angleValue    = document.getElementById('angleValue');
+
 const pauseBtn      = document.getElementById('pauseBtn');
 const resetBtn      = document.getElementById('resetBtn');
 const traceBtn      = document.getElementById('traceBtn');
@@ -320,32 +335,57 @@ const periodReadout = document.getElementById('periodReadout');
 const freqReadout   = document.getElementById('freqReadout');
 const angleReadout  = document.getElementById('angleReadout');
 const speedReadout  = document.getElementById('speedReadout');
-const keBar = document.getElementById('keBar');
-const peBar = document.getElementById('peBar');
-const keVal = document.getElementById('keVal');
-const peVal = document.getElementById('peVal');
-const totalEVal = document.getElementById('totalEVal');
 
-// ── Bob position ──
+// ── Bob position & Sub-Scaling Radius ──
 function bobPos() {
     const px = PIVOT_X + Math.sin(angle) * length * PX_PER_METER;
     const py = PIVOT_Y + Math.cos(angle) * length * PX_PER_METER;
     return { x: px, y: py };
 }
 
+// The bob is DRAWN at 2x its physical radius, so it reads clearly on screen.
+// The drag calculation deliberately keeps using the physical radius, otherwise
+// simply making the ball look bigger would quadruple the drag force and change
+// the physics the user is meant to be exploring.
+const BOB_DRAW_SCALE = 2;
+
 function bobPixelRadius() {
-    return 12 + mass * BOBS_PER_KG;
+    // Physical radius: only a slight change with mass across the slider range.
+    return 13 + (mass - 0.1) * 1.4;
+}
+
+function bobDrawRadius() {
+    return bobPixelRadius() * BOB_DRAW_SCALE;
+}
+
+function bobRadiusMeters() {
+    return bobPixelRadius() / PX_PER_METER;
 }
 
 // ── Energy ──
 function computeEnergy() {
     const bob = bobPos();
     const bobBaseY = PIVOT_Y + length * PX_PER_METER;
-    const h = (bobBaseY - bob.y) / PX_PER_METER;
+    const h = Math.max(0, (bobBaseY - bob.y) / PX_PER_METER);
     const speed = Math.abs(angularVel) * length;
     const ke = 0.5 * mass * speed * speed;
     const pe = mass * gravity * h;
-    return { ke, pe, total: ke + pe };
+    return { ke, pe, thermal: thermalEnergy, total: ke + pe + thermalEnergy };
+}
+
+// ── Reset Dynamics State ──
+function resetSimState() {
+    angularVel = 0;
+    thermalEnergy = 0;
+    const deg = +angleSlider.value;
+    angle = deg * Math.PI / 180;
+    _crossingTimes = [];
+    measuredPeriod = null;
+    periodTimer = 0;
+    lastSign = null;
+    tracePoints = [];
+    energyHistory = [];
+    simTime = 0;
 }
 
 // ── Period tracking using zero-crossings ──
@@ -355,12 +395,9 @@ function trackPeriod(dt) {
         _crossingTimes.push(periodTimer);
         if (_crossingTimes.length > 20) _crossingTimes.shift();
         if (_crossingTimes.length >= 3) {
-            // Average of last few half-periods × 2
             const diffs = [];
-            for (let i = 1; i < _crossingTimes.length; i += 2) {
-                if (i + 1 < _crossingTimes.length) {
-                    diffs.push((_crossingTimes[i+1] - _crossingTimes[i-1]));
-                }
+            for (let i = 1; i < _crossingTimes.length - 1; i += 2) {
+                diffs.push((_crossingTimes[i+1] - _crossingTimes[i-1]));
             }
             if (diffs.length > 0) {
                 measuredPeriod = diffs.reduce((a,b) => a+b, 0) / diffs.length;
@@ -375,24 +412,51 @@ function trackPeriod(dt) {
 function updatePhysics(dt) {
     if (paused) return;
 
-    // RK4-style: sub-step for accuracy
-    const subSteps = 4;
+    const subSteps = 8;
     const subDt = dt / subSteps;
+    const r = bobRadiusMeters();
+    const area = Math.PI * r * r;
 
     for (let s = 0; s < subSteps; s++) {
-        const alpha = -(gravity / length) * Math.sin(angle);
+        const v = angularVel * length;
+        const dragForce = 0.5 * AIR_DENSITY * v * Math.abs(v) * cd * area;
+        const dragTorque = dragForce * length;
+        const angularDampingAcc = dragTorque / (mass * length * length);
+
+        const gravityAlpha = -(gravity / length) * Math.sin(angle);
+        const alpha = gravityAlpha - angularDampingAcc;
+
         angularVel += alpha * subDt;
-        angularVel *= DAMPING;
         angle += angularVel * subDt;
+
+        // Dissipated Power = DragForce * v
+        const powerDissip = Math.abs(dragForce * v);
+        thermalEnergy += powerDissip * subDt;
     }
 
     trackPeriod(dt);
 
-    // Clamp energy (prevent numerical runaway)
     if (Math.abs(angularVel) > 15) angularVel = 15 * Math.sign(angularVel);
+
+    // Record data point for energy chart
+    const e = computeEnergy();
+    simTime += dt;
+    e.t = simTime;
+    energyHistory.push(e);
+
+    // Trim by time: only drop samples that have already scrolled off the left
+    // edge of the visible window (plus a small pad). Until the trace has
+    // travelled all the way to the right edge, nothing is removed at all.
+    const cutoff = simTime - GRAPH_WINDOW_S - GRAPH_TRIM_PAD_S;
+    while (energyHistory.length > 2 && energyHistory[0].t < cutoff) {
+        energyHistory.shift();
+    }
+    if (energyHistory.length > MAX_GRAPH_POINTS) {
+        energyHistory.splice(0, energyHistory.length - MAX_GRAPH_POINTS);
+    }
 }
 
-// ── Drawing ──
+// ── Drawing Main Pendulum ──
 function draw() {
     ctx.clearRect(0, 0, W, H);
 
@@ -408,7 +472,7 @@ function draw() {
     ctx.fillStyle = '#4d3724';
     ctx.fillRect(0, PIVOT_Y + 2, W, 2);
 
-    // Reference line (vertical at rest)
+    // Reference line
     ctx.setLineDash([4, 6]);
     ctx.strokeStyle = 'rgba(0,0,0,0.12)';
     ctx.lineWidth = 1;
@@ -431,17 +495,9 @@ function draw() {
         ctx.font = 'bold 10px system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(Math.abs(angleDeg).toFixed(0) + '\u00B0', PIVOT_X + (arcR + 20) * Math.cos(midA), PIVOT_Y + (arcR + 20) * Math.sin(midA));
-        // Tick marks on arc
-        for (let a = -85; a <= 85; a += 15) {
-            if (Math.abs(angleDeg) < Math.abs(a) + 3) continue;
-            const ta = -Math.PI/2 - a * Math.PI/180;
-            ctx.beginPath();
-            ctx.arc(PIVOT_X, PIVOT_Y, arcR - 5, ta - 0.02, ta + 0.02);
-            ctx.stroke();
-        }
     }
 
-    // Trace drawn behind everything
+    // Trace
     if (showTrace && tracePoints.length > 1) {
         ctx.strokeStyle = 'rgba(74, 111, 165, 0.25)';
         ctx.lineWidth = 2;
@@ -452,14 +508,6 @@ function draw() {
         }
         ctx.stroke();
         ctx.setLineDash([]);
-        // Fade trace dots
-        for (let i = 0; i < tracePoints.length; i += Math.max(1, Math.floor(tracePoints.length / 60))) {
-            const alpha = 0.08 + 0.22 * (i / tracePoints.length);
-            ctx.fillStyle = 'rgba(74, 111, 165, ' + alpha.toFixed(2) + ')';
-            ctx.beginPath();
-            ctx.arc(tracePoints[i].x, tracePoints[i].y, 1.8, 0, Math.PI * 2);
-            ctx.fill();
-        }
     }
 
     // String
@@ -471,14 +519,6 @@ function draw() {
     ctx.lineTo(bob.x, bob.y);
     ctx.stroke();
 
-    // String highlight
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PIVOT_X + 1, PIVOT_Y);
-    ctx.lineTo(bob.x + 1, bob.y);
-    ctx.stroke();
-
     // Pivot bolt
     const boltGrad = ctx.createRadialGradient(PIVOT_X - 2, PIVOT_Y - 1, 1, PIVOT_X, PIVOT_Y, 9);
     boltGrad.addColorStop(0, '#999');
@@ -488,13 +528,9 @@ function draw() {
     ctx.beginPath();
     ctx.arc(PIVOT_X, PIVOT_Y, 9, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.beginPath();
-    ctx.arc(PIVOT_X - 2, PIVOT_Y - 2, 3, 0, Math.PI * 2);
-    ctx.fill();
 
-    // Bob gradient
-    const bobR = bobPixelRadius();
+    // Bob gradient & Body
+    const bobR = bobDrawRadius();
     const bobGrad = ctx.createRadialGradient(bob.x - bobR*0.3, bob.y - bobR*0.35, bobR*0.05, bob.x, bob.y, bobR);
     bobGrad.addColorStop(0, '#e8d5b7');
     bobGrad.addColorStop(0.4, '#c4934a');
@@ -505,29 +541,26 @@ function draw() {
     ctx.arc(bob.x, bob.y, bobR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Bob highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.beginPath();
-    ctx.arc(bob.x - bobR*0.25, bob.y - bobR*0.3, bobR*0.32, 0, Math.PI * 2);
-    ctx.fill();
+    // Mass readout drawn inside the pendulum bob
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 3;
+    const numFont = Math.max(10, Math.min(15, Math.floor(bobR * 0.95)));
+    ctx.font = `bold ${numFont}px system-ui, sans-serif`;
+    ctx.fillText(mass.toFixed(1), bob.x, bob.y + 1);
+    ctx.font = `600 ${Math.max(8, Math.floor(numFont * 0.6))}px system-ui, sans-serif`;
+    ctx.fillText('kg', bob.x, bob.y + numFont + 2);
+    ctx.shadowBlur = 0;
 
-    // Speed indicator (small arrow on bob)
+    // Speed indicator arrow
     const speed = Math.abs(angularVel * length);
     if (speed > 0.02) {
-        const vDir = Math.sign(angularVel);
-        const arrowX = bob.x + vDir * (bobR + 5);
-        const arrowY = bob.y;
-        ctx.fillStyle = 'rgba(200,60,60,0.6)';
-        ctx.font = 'bold 9px system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(200,60,60,0.8)';
+        ctx.font = 'bold 10px system-ui, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 16);
-        // Mini arrow
-        ctx.strokeStyle = 'rgba(200,60,60,0.5)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(arrowX - vDir * 10, arrowY);
-        ctx.lineTo(arrowX, arrowY);
-        ctx.stroke();
+        ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 14);
     }
 
     // Pause overlay
@@ -541,6 +574,105 @@ function draw() {
     }
 }
 
+// ── Draw Energy Line Graph (K, P, Thermal, Total vs. time) ──
+function drawEnergyGraph() {
+    const gW = graphCanvas.width;
+    const gH = graphCanvas.height;
+    gCtx.clearRect(0, 0, gW, gH);
+
+    gCtx.fillStyle = '#f8f9fa';
+    gCtx.fillRect(0, 0, gW, gH);
+
+    const padL = 42, padR = 10, padT = 10, padB = 20;
+    const plotW = gW - padL - padR;
+    const plotH = gH - padT - padB;
+    const x0 = padL, y0 = gH - padB;
+
+    // Y scale: ceiling from the initial potential energy
+    const initialHeight = length * (1 - Math.cos(+angleSlider.value * Math.PI / 180));
+    const maxE = Math.max(0.1, mass * gravity * initialHeight * 1.15);
+
+    // X scale: rolling time window ending at "now"
+    const tNow = simTime;
+    const tStart = Math.max(0, tNow - GRAPH_WINDOW_S);
+
+    // Grid + Y axis labels
+    gCtx.font = '10px system-ui, sans-serif';
+    gCtx.textAlign = 'right';
+    gCtx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const val = (maxE / 4) * i;
+        const y = y0 - (val / maxE) * plotH;
+        gCtx.strokeStyle = '#e9ecef';
+        gCtx.lineWidth = 1;
+        gCtx.beginPath();
+        gCtx.moveTo(x0, y);
+        gCtx.lineTo(x0 + plotW, y);
+        gCtx.stroke();
+        gCtx.fillStyle = '#868e96';
+        gCtx.fillText(val.toFixed(1), x0 - 6, y);
+    }
+
+    // X axis ticks (every 5 s)
+    gCtx.textAlign = 'center';
+    gCtx.textBaseline = 'top';
+    for (let t = Math.ceil(tStart / 5) * 5; t <= tNow; t += 5) {
+        const x = x0 + ((t - tStart) / GRAPH_WINDOW_S) * plotW;
+        gCtx.strokeStyle = '#f1f3f5';
+        gCtx.beginPath();
+        gCtx.moveTo(x, padT);
+        gCtx.lineTo(x, y0);
+        gCtx.stroke();
+        gCtx.fillStyle = '#868e96';
+        gCtx.fillText(t + 's', x, y0 + 4);
+    }
+
+    // Axis labels
+    gCtx.save();
+    gCtx.translate(11, padT + plotH / 2);
+    gCtx.rotate(-Math.PI / 2);
+    gCtx.fillStyle = '#6c757d';
+    gCtx.font = '600 10px system-ui, sans-serif';
+    gCtx.textAlign = 'center';
+    gCtx.textBaseline = 'middle';
+    gCtx.fillText('Energy (J)', 0, 0);
+    gCtx.restore();
+
+    if (energyHistory.length < 2) {
+        gCtx.fillStyle = '#adb5bd';
+        gCtx.font = '11px system-ui, sans-serif';
+        gCtx.textAlign = 'center';
+        gCtx.fillText('Energy history will appear here once the pendulum is released', gW / 2, gH / 2);
+        return;
+    }
+
+    // Only plot samples inside the visible window
+    const pts = energyHistory.filter(p => p.t >= tStart);
+    if (pts.length < 2) return;
+
+    function plotLine(key, color, lineWidth, dash) {
+        gCtx.strokeStyle = color;
+        gCtx.lineWidth = lineWidth;
+        gCtx.setLineDash(dash || []);
+        gCtx.beginPath();
+        let started = false;
+        for (const p of pts) {
+            const x = x0 + ((p.t - tStart) / GRAPH_WINDOW_S) * plotW;
+            const val = Math.max(0, Math.min(maxE, p[key]));
+            const y = y0 - (val / maxE) * plotH;
+            if (!started) { gCtx.moveTo(x, y); started = true; }
+            else gCtx.lineTo(x, y);
+        }
+        gCtx.stroke();
+        gCtx.setLineDash([]);
+    }
+
+    plotLine('pe', '#4a6fa5', 2);            // Potential
+    plotLine('ke', '#e05252', 2);            // Kinetic
+    plotLine('thermal', '#d97706', 2);       // Thermal dissipated by drag
+    plotLine('total', '#22c55e', 1.5, [5, 4]); // Conserved total
+}
+
 // ── Update UI readouts ──
 function updateUI() {
     const deg = angle * 180 / Math.PI;
@@ -550,49 +682,40 @@ function updateUI() {
     if (measuredPeriod !== null) {
         period = measuredPeriod;
     } else {
-        // Small-angle formula
         period = 2 * Math.PI * Math.sqrt(length / gravity);
     }
     const freq = 1 / period;
-    const e = computeEnergy();
-    const maxPE = mass * gravity * length;
 
     periodReadout.textContent = period.toFixed(2);
     freqReadout.textContent = freq.toFixed(2);
     angleReadout.textContent = Math.abs(deg).toFixed(1);
     speedReadout.textContent = speed.toFixed(2);
-
-    const kePct = Math.min(100, (e.ke / maxPE) * 100);
-    const pePct = Math.min(100, (e.pe / maxPE) * 100);
-    keBar.style.height = kePct.toFixed(0) + '%';
-    peBar.style.height = pePct.toFixed(0) + '%';
-    keVal.textContent = e.ke.toFixed(3) + ' J';
-    peVal.textContent = e.pe.toFixed(3) + ' J';
-    totalEVal.textContent = e.total.toFixed(3) + ' J';
 }
 
-// ── Slider handlers ──
+// ── Event Handlers ──
 lengthSlider.addEventListener('input', () => {
     length = +lengthSlider.value;
     lengthValue.textContent = length.toFixed(2) + ' m';
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
+    resetSimState();
 });
 massSlider.addEventListener('input', () => {
     mass = +massSlider.value;
     massValue.textContent = mass.toFixed(1) + ' kg';
+    resetSimState();
+});
+dragSlider.addEventListener('input', () => {
+    cd = +dragSlider.value;
+    dragValue.textContent = cd.toFixed(2);
 });
 gravitySlider.addEventListener('input', () => {
     gravity = +gravitySlider.value;
     gravityValue.textContent = gravity.toFixed(1) + ' m/s\u00B2';
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
+    resetSimState();
 });
 angleSlider.addEventListener('input', () => {
     const deg = +angleSlider.value;
-    angle = deg * Math.PI / 180;
     angleValue.innerHTML = deg + '&deg;';
-    angularVel = 0;
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-    tracePoints = [];
+    resetSimState();
 });
 
 pauseBtn.addEventListener('click', () => {
@@ -600,11 +723,7 @@ pauseBtn.addEventListener('click', () => {
     pauseBtn.textContent = paused ? 'Resume' : 'Pause';
 });
 resetBtn.addEventListener('click', () => {
-    angularVel = 0;
-    const deg = +angleSlider.value;
-    angle = deg * Math.PI / 180;
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-    tracePoints = [];
+    resetSimState();
 });
 traceBtn.addEventListener('click', () => {
     showTrace = !showTrace;
@@ -613,7 +732,7 @@ traceBtn.addEventListener('click', () => {
     if (!showTrace) tracePoints = [];
 });
 
-// ── Bob drag (mouse) ──
+// ── Pointer Drag Support ──
 let dragging = false;
 function getCanvasPos(e) {
     const r = canvas.getBoundingClientRect();
@@ -625,7 +744,7 @@ function getCanvasPos(e) {
 function isNearBob(cx, cy) {
     const bob = bobPos();
     const dist = Math.sqrt((cx - bob.x)*(cx - bob.x) + (cy - bob.y)*(cy - bob.y));
-    return dist < bobPixelRadius() + 14;
+    return dist < bobDrawRadius() + 14;
 }
 
 canvas.addEventListener('pointerdown', (e) => {
@@ -644,37 +763,30 @@ canvas.addEventListener('pointermove', (e) => {
         const pos = getCanvasPos(e);
         const dx = pos.x - PIVOT_X;
         const dy = pos.y - PIVOT_Y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        // Clamp to roughly the string length
-        const maxDist = length * PX_PER_METER;
-        const clampedDist = Math.min(dist, maxDist * 0.98);
         const newAngle = Math.atan2(dx, dy);
         angle = -newAngle;
         const deg = angle * 180 / Math.PI;
         angleSlider.value = Math.max(1, Math.min(85, Math.abs(Math.round(deg))));
         angleValue.innerHTML = Math.abs(deg).toFixed(0) + '&deg;';
         angularVel = 0;
+        thermalEnergy = 0;
         _crossingTimes = [];
         measuredPeriod = null;
         periodTimer = 0;
         lastSign = null;
         tracePoints = [];
+        energyHistory = [];
+        simTime = 0;
         e.preventDefault();
     } else if (!paused) {
         const pos = getCanvasPos(e);
         canvas.style.cursor = isNearBob(pos.x, pos.y) ? 'grab' : 'default';
     }
 });
-canvas.addEventListener('pointerup', () => {
-    dragging = false;
-    canvas.style.cursor = 'default';
-});
-canvas.addEventListener('pointercancel', () => {
-    dragging = false;
-    canvas.style.cursor = 'default';
-});
+canvas.addEventListener('pointerup', () => { dragging = false; canvas.style.cursor = 'default'; });
+canvas.addEventListener('pointercancel', () => { dragging = false; canvas.style.cursor = 'default'; });
 
-// ── Animation ──
+// ── Animation Loop ──
 let lastTime = 0, animId = null;
 const MAX_TRACE = 250;
 
@@ -686,7 +798,6 @@ function tick(ts) {
 
     updatePhysics(dt);
 
-    // Record trace point (slightly filter: every 3rd frame)
     if (showTrace && !paused && Math.abs(angularVel) > 0.01) {
         const bob = bobPos();
         tracePoints.push({ x: bob.x, y: bob.y });
@@ -694,6 +805,7 @@ function tick(ts) {
     }
 
     draw();
+    drawEnergyGraph();
     updateUI();
     animId = requestAnimationFrame(tick);
 }

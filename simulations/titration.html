@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Titration Lab — CommonLab</title>
+    <title>Titration Lab &mdash; CommonLab</title>
     <meta name="description" content="Perform virtual acid-base titrations. Track pH in real time and identify equivalence points.">
     <link rel="stylesheet" href="../main.css">
     <style>
@@ -132,6 +132,55 @@
         }
         .titr-reset-btn:hover { background: #f5f5f5; color: #333; }
 
+        .titr-btn-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .titr-btn-row .titr-reset-btn { flex: 1; }
+
+        /* Indicator select */
+        .titr-field {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .titr-field-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            min-width: 62px;
+        }
+        .titr-select {
+            flex: 1;
+            min-width: 0;
+            padding: 0.45rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+        }
+        .titr-select:focus {
+            outline: 2px solid #4a6fa5;
+            outline-offset: 1px;
+        }
+
+        /* Contextual hint describing which region of the curve you are in */
+        .titr-hint {
+            margin: 0;
+            font-size: 0.74rem;
+            font-weight: 600;
+            line-height: 1.45;
+            color: #6c757d;
+            min-height: 1.4em;
+        }
+        .titr-hint.buffer  { color: #2d7d46; }
+        .titr-hint.jump    { color: #c2410c; }
+        .titr-hint.equiv   { color: #2d7d46; }
+
         @media (max-width: 768px) {
             .titr-readouts { grid-template-columns: repeat(2, 1fr); }
         }
@@ -169,14 +218,24 @@
                 <div class="controls-panel">
                     <!-- Scenario picker -->
                     <div class="titr-scenario" id="scenarioPick">
-                        <button class="titr-scen-btn active" data-scen="strong-strong">Strong Acid + Strong Base</button>
-                        <button class="titr-scen-btn" data-scen="weak-strong">Weak Acid + Strong Base</button>
-                        <button class="titr-scen-btn" data-scen="strong-weak">Strong Acid + Weak Base</button>
+                        <button class="titr-scen-btn active" data-scen="strong-strong">Strong + Strong</button>
+                        <button class="titr-scen-btn" data-scen="weak-strong">Weak + Strong</button>
+                        <button class="titr-scen-btn" data-scen="strong-weak">Strong + Weak</button>
+                        <button class="titr-scen-btn" data-scen="weak-weak">Weak + Weak</button>
                     </div>
 
-                    <!-- Drip control -->
+                    <!-- Indicator picker -->
+                    <div class="titr-field">
+                        <label class="titr-field-label" for="indicatorPick">Indicator</label>
+                        <select id="indicatorPick" class="titr-select">
+                            <option value="methylorange">Methyl Orange (3.1&ndash;4.4)</option>
+                            <option value="bromothymol">Bromothymol Blue (6.0&ndash;7.6)</option>
+                            <option value="phenolphthalein" selected>Phenolphthalein (8.2&ndash;10.0)</option>
+                        </select>
+                    </div>
+
+                    <!-- Drip control: titrant can only be ADDED, never withdrawn -->
                     <div class="titr-drip-control">
-                        <button class="titr-drip-btn" id="dripDown">−</button>
                         <div class="titr-drip-label">
                             <div class="titr-drip-val" id="volumeAdded">0.00</div>
                             <div class="titr-drip-unit">mL titrant added</div>
@@ -184,31 +243,20 @@
                         <button class="titr-drip-btn" id="dripUp">+</button>
                     </div>
 
-                    <!-- Quick-add buttons -->
+                    <!-- Quick-add buttons (all additions) -->
                     <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
                         <button class="titr-quick-btn" data-amt="0.1">+0.1 mL</button>
                         <button class="titr-quick-btn" data-amt="0.5">+0.5 mL</button>
                         <button class="titr-quick-btn" data-amt="1.0">+1 mL</button>
                         <button class="titr-quick-btn" data-amt="5.0">+5 mL</button>
-                        <button class="titr-quick-btn" data-amt="25.0">+25 mL</button>
                     </div>
 
-                    <div class="titr-readouts">
-                        <div class="titr-read highlight">
-                            <div class="tr-num" id="phReadout">1.00</div>
-                            <div class="tr-lbl">pH</div>
-                        </div>
-                        <div class="titr-read equiv">
-                            <div class="tr-num" id="equivVol">25.0</div>
-                            <div class="tr-lbl">Equiv. Vol (mL)</div>
-                        </div>
-                        <div class="titr-read">
-                            <div class="tr-num" id="equivPH">7.00</div>
-                            <div class="tr-lbl">pH at Equiv.</div>
-                        </div>
-                    </div>
+                    <p class="titr-hint" id="phaseHint"></p>
 
-                    <button class="titr-reset-btn" id="resetBtn">↺ Reset Titration</button>
+                    <div class="titr-btn-row">
+                        <button class="titr-reset-btn" id="resetBtn">&#8635; New Sample</button>
+                        <button class="titr-reset-btn" id="revealBtn">? Reveal Answer</button>
+                    </div>
                 </div>
             </div>
 
@@ -240,12 +288,36 @@
                     </p>
                 </div>
                 <div class="equation-card">
-                    <h3>Phenolphthalein</h3>
+                    <h3>Choosing an Indicator</h3>
                     <p class="eq-explanation">
-                        Changes from <span style="color:#999;">colourless</span> to
-                        <span style="color:#c02660;">pink</span> at pH 8.2–10.0.
-                        Best for strong base titrations. Not suitable for weak base titrations
-                        (equivalence pH is too low).
+                        An indicator is only useful if its transition range sits inside the
+                        steep jump at the equivalence point. Switch indicators and watch the
+                        shaded band on the curve:
+                        <br><br>
+                        <strong>Methyl Orange</strong> (3.1&ndash;4.4) &mdash; acid-side titrations<br>
+                        <strong>Bromothymol Blue</strong> (6.0&ndash;7.6) &mdash; strong/strong<br>
+                        <strong>Phenolphthalein</strong> (8.2&ndash;10.0, colourless &rarr; pink) &mdash; base-side titrations
+                    </p>
+                </div>
+                <div class="equation-card">
+                    <h3>No pH Meter</h3>
+                    <p class="eq-explanation">
+                        There is deliberately no pH readout, curve, or scale anywhere in this
+                        simulation. Just like the bench, your only evidence is the
+                        <strong>colour of the indicator in the flask</strong>, and your titre is
+                        whatever the burette read at the moment the colour changed.
+                        <br><br>
+                        Titrant can only be added, never withdrawn &mdash; an overshoot is a real
+                        mistake, and you have to start over with <em>New Sample</em>.
+                    </p>
+                </div>
+                <div class="equation-card">
+                    <h3>Try This</h3>
+                    <p class="eq-explanation">
+                        Run a <strong>Weak + Weak</strong> titration. The colour barely moves at
+                        the endpoint, so the reading you take is genuinely a judgement call
+                        &mdash; which is why that pairing is rarely used in practice. Then try
+                        <strong>Weak + Strong</strong>, where one drop produces a dramatic change.
                     </p>
                 </div>
             </aside>
@@ -253,7 +325,7 @@
         </div>
 
         <div class="container" style="margin-top: 1.5rem; text-align: center;">
-            <a href="../index.html#simulations" class="sim-back-link">← Back to Simulations</a>
+            <a href="../index.html#simulations" class="sim-back-link">&larr; Back to Simulations</a>
         </div>
     </section>
 </main>
@@ -268,130 +340,124 @@
 <script>
 'use strict';
 
-// ═══ Constants ═══
+// ───────── Constants ─────────
 const canvas = document.getElementById('titrCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
-// ═══ State ═══
-let scenario = 'strong-strong'; // 'strong-strong' | 'weak-strong' | 'strong-weak'
+// ───────── State ─────────
+let scenario = 'strong-strong'; // see SCENARIOS below
 let acidConc = 0.1;     // M
 let acidVol = 25.0;     // mL (analyte in flask)
 let baseConc = 0.1;     // M (titrant in burette)
 let volumeAdded = 0.0;  // mL of base added
-
-// Weak acid/base constants
-let weakKa = null; // e.g., 1.8e-5 for acetic acid
-let weakKb = null; // e.g., 1.8e-5 for ammonia
-
-// pH curve data points
-let phCurve = [];
+let showAnswer = false; // reveal the "unknown" analyte concentration
 
 // Indicator
 let indicator = 'phenolphthalein';
 
-// ═══ Chemistry ═══
+const INDICATORS = {
+    methylorange:   { label: 'Methyl Orange',   lo: 3.1, hi: 4.4, acid: [255, 140, 0],  base: [255, 210, 60] },
+    bromothymol:    { label: 'Bromothymol Blue', lo: 6.0, hi: 7.6, acid: [255, 220, 60], base: [40, 110, 200] },
+    phenolphthalein:{ label: 'Phenolphthalein',  lo: 8.2, hi: 10.0, acid: [250, 250, 250], base: [220, 40, 110] }
+};
+
+// Volume of titrant the burette can hold; the titration is clamped to this.
+function buretteCapacity() {
+    const needed = computeEquivalenceVolume() * 2 + 5;
+    return Math.max(50, Math.ceil(needed / 10) * 10);
+}
+
+// ───────── Chemistry ─────────
+// Instead of hand-rolled piecewise formulas (which drift out of sync and were
+// demonstrably wrong for the strong-acid/weak-base case), we solve the
+// charge-balance equation numerically. This one expression is correct for
+// every strong/weak combination, including near the equivalence point where
+// the piecewise versions needed fudge factors.
+//
+//   [H+] + cation = anion + [OH-]
+//
+//   cation = [base species carrying a charge]
+//            strong base -> fully dissociated,  [Na+]  = CB
+//            weak base   -> [BH+] = CB·Kb/(Kb+[OH-])
+//   anion  = [acid species carrying a charge]
+//            strong acid -> fully dissociated,  [Cl-]  = CA
+//            weak acid   -> [A-]  = CA·Ka/(Ka+[H+])
+
+const KW = 1e-14; // Kw at 25 °C
+
+const SCENARIOS = {
+    'strong-strong': { label: 'Strong Acid + Strong Base', acid: 'strong', base: 'strong', Ka: null,    Kb: null },
+    'weak-strong':   { label: 'Weak Acid + Strong Base',   acid: 'weak',   base: 'strong', Ka: 1.8e-5, Kb: null },
+    'strong-weak':   { label: 'Strong Acid + Weak Base',   acid: 'strong', base: 'weak',   Ka: null,    Kb: 1.8e-5 },
+    'weak-weak':     { label: 'Weak Acid + Weak Base',     acid: 'weak',   base: 'weak',   Ka: 1.8e-5, Kb: 1.8e-5 }
+};
+
+function currentSpec() {
+    return SCENARIOS[scenario] || SCENARIOS['strong-strong'];
+}
+
 function computeEquivalenceVolume() {
     return (acidConc * acidVol) / baseConc;
 }
 
-function computePH(volAdded) {
-    const eqVol = computeEquivalenceVolume();
-    const totalVol = acidVol + volAdded;
-    const molesAcid = acidConc * acidVol / 1000;  // moles
-    const molesBaseAdded = baseConc * volAdded / 1000;
+// Solve the charge balance for [H+] by bisection in log space.
+// The residual is strictly increasing in [H+], so bisection is guaranteed to
+// converge; 50 halvings of a 15-decade range is far more precision than needed.
+function solveH(CA, Ka, CB, Kb) {
+    const residual = (h) => {
+        const oh = KW / h;
+        const cation = Kb ? CB * Kb / (Kb + oh) : CB;
+        const anion = Ka ? CA * Ka / (Ka + h) : CA;
+        return h + cation - anion - oh;
+    };
 
-    if (scenario === 'strong-strong') {
-        if (volAdded < eqVol) {
-            // Excess strong acid
-            const excessAcid = (molesAcid - molesBaseAdded) / (totalVol / 1000);
-            return -Math.log10(Math.max(1e-14, excessAcid));
-        } else if (Math.abs(volAdded - eqVol) < 0.001) {
-            return 7.0;
-        } else {
-            // Excess strong base
-            const excessBase = (molesBaseAdded - molesAcid) / (totalVol / 1000);
-            return 14 + Math.log10(Math.max(1e-14, excessBase));
-        }
-    } else if (scenario === 'weak-strong') {
-        // Weak acid (acetic, Ka=1.8e-5) + strong base (NaOH)
-        const Ka = weakKa || 1.8e-5;
-        if (volAdded < eqVol) {
-            // Buffer region: Henderson-Hasselbalch
-            const molesAcidRemaining = molesAcid - molesBaseAdded;
-            const molesConjBase = molesBaseAdded;
-            if (molesAcidRemaining < 1e-12) return 7.0;
-            const pH = -Math.log10(Ka) + Math.log10(molesConjBase / molesAcidRemaining);
-            return Math.max(0, Math.min(14, pH));
-        } else if (Math.abs(volAdded - eqVol) < 0.001) {
-            // At equivalence: conjugate base hydrolysis
-            const concAminus = molesAcid / (totalVol / 1000);
-            const Kb = 1e-14 / Ka;
-            const OH = Math.sqrt(Kb * concAminus);
-            const pOH = -Math.log10(OH);
-            return 14 - pOH;
-        } else {
-            // Excess strong base
-            const excessBase = (molesBaseAdded - molesAcid) / (totalVol / 1000);
-            return 14 + Math.log10(Math.max(1e-14, excessBase));
-        }
-    } else if (scenario === 'strong-weak') {
-        // Strong acid (HCl) + weak base (NH3, Kb=1.8e-5)
-        const Kb = weakKb || 1.8e-5;
-        const Ka = 1e-14 / Kb;
-        if (volAdded < eqVol) {
-            // Buffer: weak base + its conjugate acid
-            const molesBaseRemaining = molesBaseAdded - molesAcid; // careful: titrant IS the weak base
-            // Actually: analyte = strong acid, titrant = weak base
-            // Excess strong acid
-            const excessAcid = (molesAcid - molesBaseAdded) / (totalVol / 1000);
-            if (excessAcid > 1e-7) {
-                return -Math.log10(excessAcid);
-            }
-            // Near equivalence: conjugate acid of weak base dominates
-            const molesBHplus = molesBaseAdded;
-            const molesB = 0; // all base from titrant has been protonated
-            if (molesBHplus < 1e-12) return -Math.log10(excessAcid);
-            return -Math.log10(Ka) + Math.log10(0.001 / molesBHplus); // approximation
-        } else if (Math.abs(volAdded - eqVol) < 0.001) {
-            // At equivalence: conjugate acid of weak base
-            const concBHplus = molesAcid / (totalVol / 1000);
-            const H = Math.sqrt(Ka * concBHplus);
-            return -Math.log10(Math.max(1e-14, H));
-        } else {
-            // Excess weak base
-            const molesExcessBase = molesBaseAdded - molesAcid;
-            const concExcess = molesExcessBase / (totalVol / 1000);
-            if (concExcess < 1e-12) return 7.0;
-            const OH = Math.sqrt(Kb * concExcess);
-            const pOH = -Math.log10(OH);
-            return 14 - pOH;
-        }
+    let loExp = -15, hiExp = 0; // [H+] from 1e-15 to 1
+    for (let i = 0; i < 50; i++) {
+        const midExp = (loExp + hiExp) / 2;
+        if (residual(Math.pow(10, midExp)) > 0) hiExp = midExp;
+        else loExp = midExp;
     }
-    return 7.0;
+    return Math.pow(10, (loExp + hiExp) / 2);
 }
 
-// ═══ Drawing ═══
+function computePH(volAdded) {
+    const spec = currentSpec();
+    const totalVolL = (acidVol + volAdded) / 1000; // litres
+    if (totalVolL <= 0) return 7;
+
+    const nAcid = acidConc * acidVol / 1000;   // moles
+    const nBase = baseConc * volAdded / 1000;  // moles
+
+    const CA = nAcid / totalVolL; // total acid species concentration
+    const CB = nBase / totalVolL; // total base species concentration
+
+    const Ka = spec.acid === 'weak' ? spec.Ka : null;
+    const Kb = spec.base === 'weak' ? spec.Kb : null;
+
+    const h = solveH(CA, Ka, CB, Kb);
+    return Math.max(0, Math.min(14, -Math.log10(h)));
+}
+
+// ───────── Drawing ─────────
+// Deliberately NO pH meter, pH scale, or pH curve. In a real lab you cannot see
+// the pH — the only evidence is the indicator colour in the flask, and the
+// titre is whatever reading you had when the colour changed. Anything that
+// displayed a number would defeat the exercise.
 function draw() {
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#fafbfc';
     ctx.fillRect(0, 0, W, H);
 
-    // ── Left side: Lab apparatus ──
-    const labW = 280;
-    drawLabApparatus(labW);
-
-    // ── Right side: pH curve ──
-    const curveX = labW + 20, curveY = 30, curveW = W - curveX - 15, curveH = H - 60;
-    drawPHCurve(curveX, curveY, curveW, curveH);
-
-    // ── Curren//t pH indicator bar ──
-    drawPHBar(curveX, H - 20, curveW);
+    drawLabApparatus();
 }
 
-function drawLabApparatus(labW) {
-    // ── Burette (left, tall) ──
-    const buretteX = 70, buretteTop = 40, buretteW = 22, buretteH = 260;
+function drawLabApparatus() {
+    // The apparatus is centred now that the pH curve no longer occupies the
+    // right half of the canvas.
+    const cx0 = W / 2;
+// ─── Burette (tall, centre) ───
+    const buretteX = cx0 - 11, buretteTop = 40, buretteW = 22, buretteH = 250;
     const buretteBottom = buretteTop + buretteH;
 
     // Burette body
@@ -407,11 +473,12 @@ function drawLabApparatus(labW) {
     ctx.fill();
     ctx.stroke();
 
-    // Burette graduations
-    const maxML = 50;
-    const fillPct = 1 - (volumeAdded / maxML);
+    // Burette graduations. The scale grows to fit the titration so the liquid
+    // level always stays inside the tube (previously a >50 mL titration drained
+    // the burette off the bottom of the drawing).
+    const maxML = buretteCapacity();
+    const fillPct = Math.max(0, 1 - (volumeAdded / maxML));
     const liquidTop = buretteBottom - 10 - (buretteH - 30) * fillPct;
-    const mLPerPx = maxML / (buretteH - 30);
 
     // Liquid inside burette
     if (fillPct > 0.01) {
@@ -421,11 +488,12 @@ function drawLabApparatus(labW) {
         ctx.fill();
     }
 
-    // Tick marks
+// Tick marks — step chosen so the labels never collide
+    const tickStep = maxML > 100 ? 25 : maxML > 50 ? 10 : 5;
     ctx.fillStyle = '#6b8ab5';
     ctx.font = '8px system-ui, sans-serif';
     ctx.textAlign = 'right';
-    for (let mL = 0; mL <= 50; mL += 5) {
+    for (let mL = 0; mL <= maxML; mL += tickStep) {
         const y = buretteBottom - 10 - (mL / maxML) * (buretteH - 30);
         ctx.fillText(mL, buretteX - 6, y + 3);
         ctx.strokeStyle = '#b0c4de';
@@ -438,7 +506,7 @@ function drawLabApparatus(labW) {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#4a6fa5';
     ctx.font = 'bold 9px system-ui, sans-serif';
-    ctx.fillText('NaOH', buretteX + buretteW/2, buretteTop - 10);
+    ctx.fillText(currentLabels().baseName, buretteX + buretteW/2, buretteTop - 10);
     ctx.fillText(baseConc.toFixed(2) + ' M', buretteX + buretteW/2, buretteBottom + 12);
 
     // Stopcock
@@ -467,7 +535,7 @@ function drawLabApparatus(labW) {
         ctx.fill();
     }
 
-    // ── Flask (below burette tip) ──
+// ─── Flask (below burette tip) ───
     const flaskCX = buretteX + buretteW/2, flaskTop = stopcockY + 38;
     const flaskW = 90, flaskH = 100;
     const flaskBottom = flaskTop + flaskH;
@@ -516,41 +584,26 @@ function drawLabApparatus(labW) {
     ctx.fillStyle = '#4a6fa5';
     ctx.font = 'bold 9px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    const acidLabel = scenario === 'strong-strong' ? 'HCl' : scenario === 'weak-strong' ? 'CH\u2083COOH' : 'HCl';
-    ctx.fillText(acidLabel, flaskCX, flaskBottom + 16);
-    ctx.fillText(acidConc.toFixed(2) + ' M, ' + acidVol.toFixed(0) + ' mL', flaskCX, flaskBottom + 30);
+    ctx.fillText(currentLabels().acidName, flaskCX, flaskBottom + 16);
+    // The analyte concentration is the "unknown" the user is meant to determine,
+    // so it stays hidden until explicitly revealed.
+    ctx.fillText(
+        (showAnswer ? acidConc.toFixed(3) + ' M' : '? M') + ', ' + acidVol.toFixed(0) + ' mL',
+        flaskCX, flaskBottom + 30
+    );
 
-    // ── pH meter ──
-    const pHMeterX = flaskCX + flaskW/2 + 20, pHMeterY = flaskTop;
-    ctx.fillStyle = '#f8f9fa';
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(pHMeterX, pHMeterY, 50, 70, 6);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#1a1a2e';
-    ctx.font = 'bold 18px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(pH.toFixed(2), pHMeterX + 25, pHMeterY + 32);
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 9px system-ui, sans-serif';
-    ctx.fillText('pH', pHMeterX + 25, pHMeterY + 50);
-    // Probe wire
-    ctx.strokeStyle = '#999';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(pHMeterX, pHMeterY + 15);
-    ctx.quadraticCurveTo(flaskCX, flaskTop - 20, flaskCX, flaskTop + 5);
-    ctx.stroke();
-    // Probe tip in flask
-    ctx.fillStyle = '#555';
-    ctx.beginPath();
-    ctx.arc(flaskCX, flaskTop + 10, 3, 0, Math.PI * 2);
-    ctx.fill();
+    // On reveal, also give the true endpoint so the user can grade their own run.
+    if (showAnswer) {
+        ctx.fillStyle = '#2d7d46';
+        ctx.fillText(
+            'True endpoint: ' + computeEquivalenceVolume().toFixed(2) + ' mL',
+            flaskCX, flaskBottom + 44
+        );
+    }
 
-    // Magnetic stirrer
-    const stirY = flaskBottom + 44;
+    // ───────── Magnetic stirrer ─────────
+    // Offset down a little so it never collides with the reveal caption.
+    const stirY = flaskBottom + 60;
     ctx.fillStyle = '#d1d5db';
     ctx.beginPath();
     ctx.roundRect(flaskCX - 35, stirY, 70, 14, 4);
@@ -572,213 +625,60 @@ function drawLabApparatus(labW) {
     ctx.restore();
 }
 
+// The solution colour follows the chosen indicator across its transition
+// range; outside that range it sits at the pure acid or base colour.
 function getIndicatorColor(pH) {
-    if (indicator === 'phenolphthalein') {
-        if (pH < 8.2) return 'rgba(240, 240, 245, 0.6)'; // colourless
-        if (pH > 10.0) return 'rgba(210, 40, 100, 0.7)'; // deep pink
-        // Transition zone: blend
-        const t = (pH - 8.2) / 1.8;
-        const r = Math.round(240 + (210-240)*t);
-        const g = Math.round(240 + (40-240)*t);
-        const b = Math.round(245 + (100-245)*t);
-        const a = 0.55 + t * 0.15;
-        return 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(2) + ')';
-    }
-    return 'rgba(240, 240, 245, 0.6)';
+    const ind = INDICATORS[indicator] || INDICATORS.phenolphthalein;
+    const t = Math.max(0, Math.min(1, (pH - ind.lo) / (ind.hi - ind.lo)));
+    const mix = (a, b, f) => Math.round(a + (b - a) * f);
+    const r = mix(ind.acid[0], ind.base[0], t);
+    const g = mix(ind.acid[1], ind.base[1], t);
+    const b = mix(ind.acid[2], ind.base[2], t);
+    // A fully transparent "colourless" acid end (phenolphthalein) still needs
+    // enough alpha for the liquid to be visible against the white flask.
+    const alpha = (0.55 + t * 0.2).toFixed(2);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
-function drawPHBar(x, y, w) {
-    const barH = 14;
-    const pH = computePH(volumeAdded);
-
-    // Gradient bar from pH 0 (red) to pH 14 (blue)
-    const barGrad = ctx.createLinearGradient(x, 0, x + w, 0);
-    for (let i = 0; i <= 14; i++) {
-        const t = i / 14;
-        let r, g, B;
-        if (t < 0.5) {
-            // Red to yellow
-            const tt = t * 2;
-            r = 220; g = Math.round(50 + tt * 180); B = Math.round(50 - tt * 20);
-        } else {
-            // Yellow to blue
-            const tt = (t - 0.5) * 2;
-            r = Math.round(220 - tt * 180); g = Math.round(230 - tt * 160); B = Math.round(30 + tt * 150);
-        }
-        barGrad.addColorStop(t, 'rgb(' + r + ',' + g + ',' + B + ')');
-    }
-    ctx.fillStyle = barGrad;
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, barH, 4);
-    ctx.fill();
-
-    // Current pH indicator
-    const pHX = x + (pH / 14) * w;
-    ctx.fillStyle = '#1a1a2e';
-    ctx.beginPath();
-    ctx.moveTo(pHX, y - 6);
-    ctx.lineTo(pHX - 5, y - 2);
-    ctx.lineTo(pHX + 5, y - 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(pHX, y + barH + 6);
-    ctx.lineTo(pHX - 5, y + barH + 2);
-    ctx.lineTo(pHX + 5, y + barH + 2);
-    ctx.fill();
-
-    // pH label
-    ctx.fillStyle = '#1a1a2e';
-    ctx.font = 'bold 10px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('pH ' + pH.toFixed(2), pHX, y - 8);
-
-    // Tick marks
-    ctx.fillStyle = '#666';
-    ctx.font = '8px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    for (let p = 0; p <= 14; p += 2) {
-        const tx = x + (p / 14) * w;
-        ctx.fillText(p, tx, y + barH + 16);
-    }
+// ─── Chemical labels for the current scenario ───
+function currentLabels() {
+    const spec = currentSpec();
+    const acidName = spec.acid === 'weak' ? 'CH3COOH' : 'HCl';
+    // (labels used for the flask and burette captions)
+    const baseName = spec.base === 'weak' ? 'NH3' : 'NaOH';
+    return { acidName, baseName };
 }
 
-function drawPHCurve(cx, cy, cw, ch) {
-    const eqVol = computeEquivalenceVolume();
-    const maxVol = Math.max(eqVol * 2 + 5, volumeAdded + 5);
 
-    // Axes
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx, cy + ch);
-    ctx.lineTo(cx + cw, cy + ch);
-    ctx.stroke();
-
-    // Labels
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 11px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Volume of Titrant Added (mL)', cx + cw/2, cy + ch + 30);
-    ctx.save();
-    ctx.translate(cx - 28, cy + ch/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.fillText('pH', 0, 0);
-    ctx.restore();
-
-    // Y-axis ticks
-    ctx.fillStyle = '#888';
-    ctx.font = '8px system-ui, sans-serif';
-    ctx.textAlign = 'right';
-    for (let p = 0; p <= 14; p += 2) {
-        const y = cy + ch - (p / 14) * ch;
-        ctx.fillText(p, cx - 6, y + 3);
-        ctx.strokeStyle = '#e0e0e0';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(cx, y);
-        ctx.lineTo(cx + cw, y);
-        ctx.stroke();
-    }
-
-    // X-axis ticks
-    ctx.fillStyle = '#888';
-    ctx.textAlign = 'center';
-    const tickStep = maxVol > 100 ? 25 : maxVol > 50 ? 10 : 5;
-    for (let v = 0; v <= maxVol; v += tickStep) {
-        const x = cx + (v / maxVol) * cw;
-        ctx.fillText(v, x, cy + ch + 14);
-        ctx.strokeStyle = '#e0e0e0';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(x, cy);
-        ctx.lineTo(x, cy + ch);
-        ctx.stroke();
-    }
-
-    // Equivalence point line
-    const eqX = cx + (eqVol / maxVol) * cw;
-    ctx.strokeStyle = '#2d7d46';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(eqX, cy);
-    ctx.lineTo(eqX, cy + ch);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#2d7d46';
-    ctx.font = 'bold 9px system-ui, sans-serif';
-    ctx.fillText('Equiv: ' + eqVol.toFixed(1) + ' mL', eqX, cy - 4);
-
-    // Draw pH curve
-    const points = [];
-    const numPoints = 200;
-    for (let i = 0; i <= numPoints; i++) {
-        const v = (i / numPoints) * maxVol;
-        const pH = computePH(v);
-        const px = cx + (v / maxVol) * cw;
-        const py = cy + ch - (pH / 14) * ch;
-        points.push({ x: px, y: py, pH, v });
-    }
-
-    // Fill under curve
-    ctx.fillStyle = 'rgba(74, 111, 165, 0.08)';
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, cy + ch);
-    for (const pt of points) ctx.lineTo(pt.x, pt.y);
-    ctx.lineTo(points[points.length - 1].x, cy + ch);
-    ctx.fill();
-
-    // Curve line
-    ctx.strokeStyle = '#4a6fa5';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    for (const pt of points) ctx.lineTo(pt.x, pt.y);
-    ctx.stroke();
-
-    // Current point highlight
-    const curX = cx + (volumeAdded / maxVol) * cw;
-    const curY = cy + ch - (computePH(volumeAdded) / 14) * ch;
-    ctx.fillStyle = '#e05252';
-    ctx.beginPath();
-    ctx.arc(curX, curY, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Equivalence point dot
-    if (volumeAdded >= eqVol - 0.5) {
-        const eqPH = computePH(eqVol);
-        const eqPY = cy + ch - (eqPH / 14) * ch;
-        ctx.fillStyle = '#2d7d46';
-        ctx.beginPath();
-        ctx.arc(eqX, eqPY, 4, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-// ═══ Event Handling ═══
-document.getElementById('dripUp').addEventListener('click', () => {
-    volumeAdded = Math.min(volumeAdded + 0.5, 100);
+// ───────── Event Handling ─────────
+// Titrant can only ever be ADDED. addVolume() rejects non-positive amounts
+// outright, so no code path (button, keyboard, or any UI added later) can
+// withdraw titrant. The only way to lower the volume is "New Sample".
+function addVolume(amt) {
+    if (!(amt > 0)) return;
+    volumeAdded = Math.min(buretteCapacity(), volumeAdded + amt);
     updateUI();
-});
-document.getElementById('dripDown').addEventListener('click', () => {
-    volumeAdded = Math.max(volumeAdded - 0.5, 0);
-    updateUI();
-});
+}
+
+document.getElementById('dripUp').addEventListener('click', () => addVolume(0.5));
 
 document.querySelectorAll('.titr-quick-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const amt = parseFloat(btn.dataset.amt);
-        volumeAdded = Math.min(volumeAdded + amt, 100);
-        updateUI();
-    });
+    btn.addEventListener('click', () => addVolume(parseFloat(btn.dataset.amt)));
 });
 
 document.getElementById('resetBtn').addEventListener('click', () => {
     volumeAdded = 0;
+    updateUI();
+});
+
+document.getElementById('revealBtn').addEventListener('click', () => {
+    showAnswer = !showAnswer;
+    document.getElementById('revealBtn').textContent = showAnswer ? '&#10003; Answer Shown' : '? Reveal Answer';
+    updateUI();
+});
+
+document.getElementById('indicatorPick').addEventListener('change', (e) => {
+    indicator = e.target.value;
     updateUI();
 });
 
@@ -788,49 +688,54 @@ document.querySelectorAll('.titr-scen-btn').forEach(btn => {
         btn.classList.add('active');
         scenario = btn.dataset.scen;
         volumeAdded = 0;
-
-        // Set up scenario parameters
-        if (scenario === 'strong-strong') {
-            acidConc = 0.1; baseConc = 0.1;
-        } else if (scenario === 'weak-strong') {
-            acidConc = 0.1; baseConc = 0.1;
-            weakKa = 1.8e-5; // acetic acid
-        } else if (scenario === 'strong-weak') {
-            acidConc = 0.1; baseConc = 0.1;
-            weakKb = 1.8e-5; // ammonia
+        // These titrations have a much less pronounced jump, and phenolphthalein
+// (pH 8.2—10.0) would never fire. Default to methyl orange instead.
+        if (scenario === 'weak-weak' || scenario === 'strong-weak') {
+            indicator = 'methylorange';
+            document.getElementById('indicatorPick').value = 'methylorange';
         }
         updateUI();
     });
 });
 
-// ═══ Keyboard ═══
+// ───────── Keyboard ─────────
 document.addEventListener('keydown', (e) => {
+    // Never hijack keys while the user is interacting with a control.
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
     if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-        volumeAdded = Math.min(volumeAdded + 0.5, 100);
-        updateUI();
-    }
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-        volumeAdded = Math.max(volumeAdded - 0.5, 0);
-        updateUI();
-    }
-    if (e.key === 'r' || e.key === 'R') {
+        addVolume(0.5);
+        e.preventDefault(); // stop the page from scrolling
+    } else if (e.key === 'r' || e.key === 'R') {
         volumeAdded = 0;
         updateUI();
     }
 });
 
-function updateUI() {
-    const pH = computePH(volumeAdded);
-    const eqVol = computeEquivalenceVolume();
-    const eqPH = computePH(eqVol);
-
-    document.getElementById('phReadout').textContent = pH.toFixed(2);
-    document.getElementById('equivVol').textContent = eqVol.toFixed(1);
-    document.getElementById('equivPH').textContent = eqPH.toFixed(2);
-    document.getElementById('volumeAdded').textContent = volumeAdded.toFixed(2);
+// Guidance that never reveals how close you are. It deliberately does NOT
+// mention pH, the equivalence volume, or whether you have passed the endpoint —
+// that information is exactly what you are meant to judge from the flask colour.
+function phaseHint() {
+    if (volumeAdded <= 0) {
+        return { cls: '', text: 'Add titrant and watch the flask colour.' };
+    }
+    return {
+        cls: '',
+        text: 'Watch the flask. Record the burette reading at the first permanent colour change.'
+    };
 }
 
-// ── roundRect polyfill ──
+function updateUI() {
+    document.getElementById('volumeAdded').textContent = volumeAdded.toFixed(2);
+
+    const hint = phaseHint();
+    const hintEl = document.getElementById('phaseHint');
+    hintEl.textContent = hint.text;
+    hintEl.className = 'titr-hint ' + hint.cls;
+}
+
+// ───────── roundRect polyfill ─────────
 if (!CanvasRenderingContext2D.prototype.roundRect) {
     CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
         r = typeof r === 'number' ? r : (r || 0);
@@ -842,7 +747,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     };
 }
 
-// ═══ Animation ═══
+// ───────── Animation ─────────
 let animId;
 function tick() {
     draw();

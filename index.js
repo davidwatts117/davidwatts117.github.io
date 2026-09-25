@@ -36,28 +36,54 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', updateActiveNav, { passive: true });
     updateActiveNav();
 
-    // --- Fullscreen: sim box left, info right ---
-    const canvasWrap = document.querySelector('.canvas-wrapper');
+    // --- Fullscreen: let the simulation fill the whole screen ---
+    // NOTE: each sim draws in a fixed logical coordinate space and maps pointer
+    // positions through getBoundingClientRect(), so scaling the canvas via CSS
+    // keeps mouse/touch interaction correct at any zoom level.
     const simLayout = document.querySelector('.sim-layout');
-    if (canvasWrap && simLayout) {
+    // projectile.html uses .proj-canvas-wrap; the others use .canvas-wrapper
+    const canvasWrap = document.querySelector('.canvas-wrapper, .proj-canvas-wrap');
+
+    if (simLayout && canvasWrap) {
         const btn = document.createElement('button');
         btn.className = 'btn-fullscreen';
+        btn.type = 'button';
         btn.innerHTML = '⛶';
         btn.title = 'Fullscreen simulation';
-        canvasWrap.style.position = 'relative';
+        btn.setAttribute('aria-label', 'Fullscreen simulation');
+        if (getComputedStyle(canvasWrap).position === 'static') {
+            canvasWrap.style.position = 'relative';
+        }
         canvasWrap.appendChild(btn);
 
-        btn.addEventListener('click', () => {
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            } else {
-                simLayout.requestFullscreen().catch(() => {});
-            }
-        });
+        const isFs = () => document.fullscreenElement === simLayout;
 
-        document.addEventListener('fullscreenchange', () => {
-            simLayout.classList.toggle('fs-active', !!document.fullscreenElement);
-        });
+        const toggle = () => {
+            if (isFs()) {
+                if (document.exitFullscreen) document.exitFullscreen();
+            } else {
+                const req = simLayout.requestFullscreen
+                    || simLayout.webkitRequestFullscreen;
+                if (req) {
+                    const p = req.call(simLayout);
+                    if (p && p.catch) p.catch(() => {});
+                }
+            }
+        };
+
+        btn.addEventListener('click', toggle);
+
+        const syncUi = () => {
+            const active = isFs();
+            simLayout.classList.toggle('fs-active', active);
+            document.body.classList.toggle('sim-fs', active);
+            btn.innerHTML = active ? '⤢' : '⛶';
+            btn.title = active ? 'Exit fullscreen' : 'Fullscreen simulation';
+            btn.setAttribute('aria-label', btn.title);
+        };
+
+        document.addEventListener('fullscreenchange', syncUi);
+        document.addEventListener('webkitfullscreenchange', syncUi);
     }
 
     console.log('CommonLab loaded');
