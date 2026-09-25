@@ -9,97 +9,6 @@
     <style>
         #circuitCanvas { width: 100%; max-width: 800px; height: auto; aspect-ratio: 800 / 520; display: block; border-radius: 8px; background: #fafbfc; cursor: default; }
 
-        .ckt-tools {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            padding: 0.75rem;
-            background: #fff;
-            border: 1px solid #e9ecef;
-            border-radius: 12px;
-            align-items: center;
-        }
-        .ckt-tool-btn {
-            padding: 0.45rem 0.9rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            background: #fff;
-            font-family: inherit;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #555;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-        .ckt-tool-btn:hover { border-color: #999; color: #333; }
-        .ckt-tool-btn.active { border-color: #4a6fa5; background: #eef3fa; color: #4a6fa5; }
-        .ckt-tool-btn .ckt-icon { font-size: 1.1rem; }
-
-        .ckt-action-row {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .ckt-action-btn {
-            padding: 0.45rem 1rem;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.82rem;
-            border: none;
-            cursor: pointer;
-            transition: all 0.15s;
-            font-family: inherit;
-        }
-        .ckt-action-btn:hover { transform: translateY(-1px); }
-        .ckt-action-btn.run { background: #4a6fa5; color: #fff; }
-        .ckt-action-btn.run:hover { background: #3b5d8f; }
-        .ckt-action-btn.clear { background: #e9ecef; color: #495057; }
-        .ckt-action-btn.clear:hover { background: #d1d5db; }
-        .ckt-action-btn.preset { background: #f0f4fa; color: #4a6fa5; }
-        .ckt-action-btn.preset:hover { background: #dbeafe; }
-
-        .ckt-readouts {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.6rem;
-            padding: 0.75rem 0 0 0;
-            border-top: 1px solid #e9ecef;
-        }
-        .ckt-read {
-            text-align: center;
-            padding: 0.5rem 0.3rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .ckt-read .cr-num {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: #1a1a2e;
-            font-variant-numeric: tabular-nums;
-        }
-        .ckt-read .cr-lbl {
-            font-size: 0.65rem;
-            color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .ckt-read.highlight .cr-num { color: #4a6fa5; }
-        .ckt-read.warn .cr-num { color: #dc2626; }
-
-        .ckt-help {
-            font-size: 0.75rem;
-            color: #999;
-            text-align: center;
-            margin-top: 0.4rem;
-        }
-
-        @media (max-width: 768px) {
-            .ckt-readouts { grid-template-columns: repeat(2, 1fr); }
-        }
     </style>
 </head>
 <body>
@@ -132,54 +41,54 @@
                 </div>
 
                 <div class="controls-panel">
-                    <div class="ckt-tools">
-                        <button class="ckt-tool-btn active" data-tool="battery">
-                            <span class="ckt-icon">&#9889;</span> Battery
+                    <div class="sim-toolbar">
+                        <button class="sim-tool is-active" data-tool="battery">
+                            <span class="sim-tool__icon">&#9889;</span> Battery
                         </button>
-                        <button class="ckt-tool-btn" data-tool="resistor">
-                            <span class="ckt-icon">&#9776;</span> Resistor
+                        <button class="sim-tool" data-tool="resistor">
+                            <span class="sim-tool__icon">&#9776;</span> Resistor
                         </button>
-                        <button class="ckt-tool-btn" data-tool="bulb">
-                            <span class="ckt-icon">&#128161;</span> Bulb
+                        <button class="sim-tool" data-tool="bulb">
+                            <span class="sim-tool__icon">&#128161;</span> Bulb
                         </button>
-                        <button class="ckt-tool-btn" data-tool="wire">
-                            <span class="ckt-icon">&#8212;</span> Wire
+                        <button class="sim-tool" data-tool="wire">
+                            <span class="sim-tool__icon">&#8212;</span> Wire
                         </button>
-                        <button class="ckt-tool-btn" data-tool="switch">
-                            <span class="ckt-icon">&#9211;</span> Switch
+                        <button class="sim-tool" data-tool="switch">
+                            <span class="sim-tool__icon">&#9211;</span> Switch
                         </button>
-                        <button class="ckt-tool-btn" data-tool="delete">
-                            <span class="ckt-icon">&#10005;</span> Delete
+                        <button class="sim-tool" data-tool="delete">
+                            <span class="sim-tool__icon">&#10005;</span> Delete
                         </button>
                     </div>
 
-                    <div class="ckt-action-row">
-                        <button class="ckt-action-btn preset" id="presetSeries">Preset: Series</button>
-                        <button class="ckt-action-btn preset" id="presetParallel">Preset: Parallel</button>
-                        <button class="ckt-action-btn run" id="runBtn">&#9654; Simulate</button>
-                        <button class="ckt-action-btn clear" id="clearBtn">Clear All</button>
+                    <div class="sim-actions">
+                        <button class="sim-btn sim-btn--soft" id="presetSeries">Preset: Series</button>
+                        <button class="sim-btn sim-btn--soft" id="presetParallel">Preset: Parallel</button>
+                        <button class="sim-btn sim-btn--primary" id="runBtn">&#9654; Simulate</button>
+                        <button class="sim-btn sim-btn--ghost" id="clearBtn">Clear All</button>
                     </div>
 
-                    <div class="ckt-readouts">
-                        <div class="ckt-read highlight">
-                            <div class="cr-num" id="vBat">9.00</div>
-                            <div class="cr-lbl">Battery (V)</div>
+                    <div class="sim-readouts sim-readouts--4">
+                        <div class="sim-readout sim-readout--highlight">
+                            <div class="sim-readout__value" id="vBat">9.00</div>
+                            <div class="sim-readout__label">Battery (V)</div>
                         </div>
-                        <div class="ckt-read">
-                            <div class="cr-num" id="current">0.00</div>
-                            <div class="cr-lbl">Current (A)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="current">0.00</div>
+                            <div class="sim-readout__label">Current (A)</div>
                         </div>
-                        <div class="ckt-read">
-                            <div class="cr-num" id="req">0.00</div>
-                            <div class="cr-lbl">Req (&Omega;)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="req">0.00</div>
+                            <div class="sim-readout__label">Req (&Omega;)</div>
                         </div>
-                        <div class="ckt-read">
-                            <div class="cr-num" id="power">0.00</div>
-                            <div class="cr-lbl">Power (W)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="power">0.00</div>
+                            <div class="sim-readout__label">Power (W)</div>
                         </div>
                     </div>
 
-                    <div class="ckt-help">Click a tool then click the canvas to place it. Drag components to move them.</div>
+                    <div class="sim-help">Click a tool then click the canvas to place it. Drag components to move them.</div>
                 </div>
             </div>
 
@@ -233,6 +142,7 @@
 </footer>
 
 <script src="../index.js"></script>
+<script src="../library.js"></script>
 <script>
 'use strict';
 
@@ -240,6 +150,7 @@
 const canvas = document.getElementById('circuitCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
+const T = SimLib.Theme.use('light');
 
 // Grid
 const GRID = 20;
@@ -271,11 +182,7 @@ function gridKey(x, y) {
 }
 
 function getCanvasPos(e) {
-    const r = canvas.getBoundingClientRect();
-    return {
-        x: (e.clientX - r.left) * (W / r.width),
-        y: (e.clientY - r.top) * (H / r.height)
-    };
+    return SimLib.CanvasUtils.eventPos(canvas, e);
 }
 
 // ═══ Component Logic ═══
@@ -463,11 +370,11 @@ function drawComponent(comp, isHovered, isSelected) {
 
     // Highlight
     if (isHovered || isSelected) {
-        ctx.fillStyle = 'rgba(74, 111, 165, 0.08)';
+        ctx.fillStyle = T.accentSoft;
         ctx.beginPath();
         ctx.arc(cx, cy, r + 8, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#4a6fa5';
+        ctx.strokeStyle = T.accent;
         ctx.lineWidth = 2;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -479,7 +386,7 @@ function drawComponent(comp, isHovered, isSelected) {
     switch (comp.type) {
         case 'battery':
             // Long line (positive) and short line (negative)
-            ctx.strokeStyle = '#1a1a2e';
+            ctx.strokeStyle = T.ink;
             ctx.lineWidth = 3;
             // Long line
             ctx.beginPath();
@@ -493,20 +400,20 @@ function drawComponent(comp, isHovered, isSelected) {
             ctx.lineTo(cx + 3, cy + 5);
             ctx.stroke();
             // Plus/minus
-            ctx.fillStyle = '#1a1a2e';
-            ctx.font = 'bold 8px system-ui, sans-serif';
+            ctx.fillStyle = T.ink;
+            ctx.font = T.font(8, 'bold');
             ctx.textAlign = 'center';
             ctx.fillText('+', cx + 11, cy - 3);
             ctx.fillText('−', cx + 11, cy + 8);
             // Connection points
-            ctx.fillStyle = '#555';
+            ctx.fillStyle = T.muted;
             ctx.beginPath(); ctx.arc(cx, cy - 8, 2.5, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(cx, cy + 8, 2.5, 0, Math.PI * 2); ctx.fill();
             break;
 
         case 'resistor':
             // Zigzag
-            ctx.strokeStyle = '#1a1a2e';
+            ctx.strokeStyle = T.ink;
             ctx.lineWidth = 2.5;
             ctx.beginPath();
             const segW = 3, segH = 3;
@@ -519,47 +426,48 @@ function drawComponent(comp, isHovered, isSelected) {
             ctx.lineTo(cx, cy + 9);
             ctx.stroke();
             // Connection points
-            ctx.fillStyle = '#555';
+            ctx.fillStyle = T.muted;
             ctx.beginPath(); ctx.arc(cx, cy - 9, 2.5, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(cx, cy + 9, 2.5, 0, Math.PI * 2); ctx.fill();
             // Label resistance
-            ctx.fillStyle = '#495057';
-            ctx.font = 'bold 9px system-ui, sans-serif';
+            ctx.fillStyle = T.text;
+            ctx.font = T.font(9, 'bold');
             ctx.textAlign = 'center';
             ctx.fillText(comp.resistance + '\u03A9', cx, cy + 20);
             break;
 
         case 'bulb':
             // Circle with filament
-            ctx.strokeStyle = '#1a1a2e';
+            ctx.strokeStyle = T.ink;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(cx, cy, 8, 0, Math.PI * 2);
             ctx.stroke();
             // Filament
             ctx.lineWidth = 1.5;
-            ctx.strokeStyle = '#e05252';
+            ctx.strokeStyle = T.danger;
             ctx.beginPath();
             ctx.moveTo(cx - 3, cy - 3);
             ctx.lineTo(cx, cy);
             ctx.lineTo(cx + 3, cy - 3);
             ctx.stroke();
             // Base
-            ctx.strokeStyle = '#1a1a2e';
+            ctx.strokeStyle = T.ink;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(cx, cy + 8);
             ctx.lineTo(cx, cy + 11);
             ctx.stroke();
             // Connection points
-            ctx.fillStyle = '#555';
+            ctx.fillStyle = T.muted;
             ctx.beginPath(); ctx.arc(cx, cy - 8, 2.5, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(cx, cy + 11, 2.5, 0, Math.PI * 2); ctx.fill();
             // Glow when circuit is active
             const result = analyzeCircuit();
             if (result.current > 0 && !result.shortCircuit && !result.openCircuit) {
                 const brightness = Math.min(1, result.current / 2);
-                ctx.fillStyle = 'rgba(255, 220, 80, ' + (0.15 + brightness * 0.5) + ')';
+                const glowRgb = SimLib.Color.parse(T.glow);
+                ctx.fillStyle = `rgba(${glowRgb.r}, ${glowRgb.g}, ${glowRgb.b}, ${0.15 + brightness * 0.5})`;
                 ctx.beginPath();
                 ctx.arc(cx, cy, 14, 0, Math.PI * 2);
                 ctx.fill();
@@ -568,14 +476,14 @@ function drawComponent(comp, isHovered, isSelected) {
 
         case 'wire':
             // Small dot
-            ctx.fillStyle = '#333';
+            ctx.fillStyle = T.ink;
             ctx.beginPath();
             ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
             ctx.fill();
             break;
 
         case 'switch':
-            ctx.strokeStyle = '#333';
+            ctx.strokeStyle = T.ink;
             ctx.lineWidth = 2.5;
             if (comp.switchClosed) {
                 ctx.beginPath();
@@ -591,7 +499,7 @@ function drawComponent(comp, isHovered, isSelected) {
                 ctx.lineTo(cx + 10, cy + 4);
                 ctx.stroke();
                 // "Open" indicator
-                ctx.strokeStyle = '#e05252';
+                ctx.strokeStyle = T.danger;
                 ctx.lineWidth = 1;
                 ctx.setLineDash([3, 3]);
                 ctx.beginPath();
@@ -601,14 +509,14 @@ function drawComponent(comp, isHovered, isSelected) {
                 ctx.setLineDash([]);
             }
             // Connection points
-            ctx.fillStyle = '#555';
+            ctx.fillStyle = T.muted;
             ctx.beginPath(); ctx.arc(cx, cy - 8, 2.5, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(cx, cy + 8, 2.5, 0, Math.PI * 2); ctx.fill();
             break;
     }
 
     if (isSelected) {
-        ctx.strokeStyle = '#4a6fa5';
+        ctx.strokeStyle = T.accent;
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
@@ -619,26 +527,14 @@ function drawComponent(comp, isHovered, isSelected) {
 function draw() {
     ctx.clearRect(0, 0, W, H);
 
-    // Background grid
-    ctx.fillStyle = '#fafbfc';
-    ctx.fillRect(0, 0, W, H);
-
-    for (let x = 0; x <= W; x += GRID) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, H);
-        ctx.stroke();
-    }
-    for (let y = 0; y <= H; y += GRID) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(W, y);
-        ctx.stroke();
-    }
+    // Background + grid + title (shared theme)
+    SimLib.Draw.background(ctx, W, H, T);
+    SimLib.Draw.grid(ctx, W, H, { step: GRID, color: 'rgba(26, 42, 78, 0.05)', lineWidth: 1, theme: T });
+    SimLib.Draw.title(ctx, 'Circuit Builder', 12, 18, { size: 13, color: T.muted, theme: T });
+    SimLib.Draw.legend(ctx, [
+        { color: T.accent, label: 'Live', shape: 'line' },
+        { color: T.faint, label: 'Open', shape: 'line' },
+    ], W - 132, 14, { size: 10, gap: 12, theme: T });
 
     // Draw wires
     const result = analyzeCircuit();
@@ -646,7 +542,7 @@ function draw() {
 
     for (const w of wires) {
         if (w.compA && w.compB) {
-            ctx.strokeStyle = hasCurrent ? '#4a6fa5' : '#999';
+            ctx.strokeStyle = hasCurrent ? T.accent : T.faint;
             ctx.lineWidth = hasCurrent ? 3 : 2;
             ctx.beginPath();
             ctx.moveTo(w.compA.gx, w.compA.gy);
@@ -667,7 +563,8 @@ function draw() {
                         const ax = w.compA.gx + dx * t;
                         const ay = w.compA.gy + dy * t;
                         const alpha = 0.3 + 0.4 * Math.abs(Math.sin(Date.now() * 0.003 + i));
-                        ctx.fillStyle = 'rgba(74, 111, 165, ' + alpha.toFixed(2) + ')';
+                        const accRgb = SimLib.Color.parse(T.accent);
+                        ctx.fillStyle = `rgba(${accRgb.r}, ${accRgb.g}, ${accRgb.b}, ${alpha.toFixed(2)})`;
                         ctx.beginPath();
                         ctx.moveTo(ax + nx * 4, ay + ny * 4);
                         ctx.lineTo(ax - nx * 3 + ny * 2.5, ay - ny * 3 - nx * 2.5);
@@ -681,7 +578,8 @@ function draw() {
 
     // Draw dragging wire preview
     if (draggingWire) {
-        ctx.strokeStyle = 'rgba(74, 111, 165, 0.4)';
+        const dragRgb = SimLib.Color.parse(T.accent);
+        ctx.strokeStyle = `rgba(${dragRgb.r}, ${dragRgb.g}, ${dragRgb.b}, 0.4)`;
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -701,28 +599,19 @@ function draw() {
     if (result.shortCircuit) {
         ctx.fillStyle = 'rgba(220, 38, 38, 0.12)';
         ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = '#dc2626';
-        ctx.font = 'bold 16px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('⚠ SHORT CIRCUIT — Check your wiring', W/2, H - 20);
+        SimLib.Draw.text(ctx, '⚠ SHORT CIRCUIT — Check your wiring', W/2, H - 20, { size: 16, weight: 'bold', color: T.danger, align: 'center', theme: T });
     }
 
     if (result.openSwitch) {
         ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
         ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = '#b45309';
-        ctx.font = 'bold 14px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Switch is open — close it to complete the circuit', W/2, H - 20);
+        SimLib.Draw.text(ctx, 'Switch is open — close it to complete the circuit', W/2, H - 20, { size: 14, weight: 'bold', color: T.warn, align: 'center', theme: T });
     }
 
     if (result.openCircuit) {
         ctx.fillStyle = 'rgba(100, 100, 100, 0.06)';
         ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = '#888';
-        ctx.font = '13px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Open circuit — connect components with wires to form a loop', W/2, H - 20);
+        SimLib.Draw.text(ctx, 'Open circuit — connect components with wires to form a loop', W/2, H - 20, { size: 13, color: T.muted, align: 'center', theme: T });
     }
 }
 
@@ -734,26 +623,26 @@ function updateReadouts() {
         document.getElementById('current').textContent = '∞';
         document.getElementById('req').textContent = '0';
         document.getElementById('power').textContent = '∞';
-        document.getElementById('current').parentElement.classList.add('warn');
+        document.getElementById('current').parentElement.classList.add('sim-readout--warn');
     } else if (r.openSwitch || r.openCircuit) {
         document.getElementById('current').textContent = '0.00';
         document.getElementById('req').textContent = r.openCircuit ? '∞' : '∞';
         document.getElementById('power').textContent = '0.00';
-        document.getElementById('current').parentElement.classList.remove('warn');
+        document.getElementById('current').parentElement.classList.remove('sim-readout--warn');
     } else {
         document.getElementById('current').textContent = r.current.toFixed(3);
         document.getElementById('req').textContent = r.req.toFixed(1);
         document.getElementById('power').textContent = r.power.toFixed(2);
-        document.getElementById('current').parentElement.classList.remove('warn');
+        document.getElementById('current').parentElement.classList.remove('sim-readout--warn');
     }
 }
 
 // ═══ Event Handling ═══
-const toolButtons = document.querySelectorAll('.ckt-tool-btn');
+const toolButtons = document.querySelectorAll('.sim-tool');
 toolButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-        toolButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        toolButtons.forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
         selectedTool = btn.dataset.tool;
         selectedComp = null;
     });
@@ -964,22 +853,26 @@ document.getElementById('runBtn').addEventListener('click', () => {
     draw();
 });
 
-// ═══ Animation ═══
-let animId;
-function tick() {
-    const result = analyzeCircuit();
-    if (result.current > 0 && !result.shortCircuit) {
-        draw();
-    }
-    updateReadouts();
-    animId = requestAnimationFrame(tick);
-}
+// ═══ Animation (SimLib) ═══
+// The circuit is drawn in a fixed 800x520 logical coordinate space; SimLib
+// maps that space onto the responsive (HiDPI-aware) displayed canvas so that
+// what is drawn and what the pointer hits both line up.
 
-// ═══ Init ═══
+// Initialize preset state
 document.getElementById('presetSeries').click();
-animId = requestAnimationFrame(tick);
+updateReadouts();
 
-window.addEventListener('beforeunload', () => { if (animId) cancelAnimationFrame(animId); });
+const app = SimLib.attach({
+    canvas: canvas,
+    logicalWidth: 800,
+    logicalHeight: 520,
+    SimulationClass: class CircuitSim extends SimLib.Simulation {
+        onResize() { draw(); }
+        onTick() { updateReadouts(); }
+        onDraw(ctx) { draw(); }
+    }
+});
+app.sim.start();
 </script>
 </body>
 </html>

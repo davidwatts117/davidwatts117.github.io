@@ -9,63 +9,6 @@
     <style>
         #pendulumCanvas { width: 100%; max-width: 700px; height: auto; aspect-ratio: 700 / 480; display: block; border-radius: 8px; background: #fafbfc; cursor: default; }
 
-        .pend-readouts {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #e9ecef;
-        }
-        .pend-readout {
-            text-align: center;
-            padding: 0.6rem 0.4rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-        .pend-readout .pr-num {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #1a1a2e;
-            font-variant-numeric: tabular-nums;
-        }
-        .pend-readout .pr-lbl {
-            font-size: 0.7rem;
-            color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-top: 0.15rem;
-        }
-        .pend-readout.highlight .pr-num { color: #4a6fa5; }
-
-        .pend-button-row {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            padding-top: 0.5rem;
-            border-top: 1px solid #e9ecef;
-        }
-        .pend-btn {
-            padding: 0.5rem 1.25rem;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border: none;
-            cursor: pointer;
-            transition: background 0.15s, transform 0.1s;
-            font-family: inherit;
-        }
-        .pend-btn:hover { transform: translateY(-1px); }
-        .pend-btn:active { transform: translateY(0); }
-        .pend-btn-pause { background: #4a6fa5; color: #fff; }
-        .pend-btn-pause:hover { background: #3b5d8f; }
-        .pend-btn-reset { background: #e9ecef; color: #495057; }
-        .pend-btn-reset:hover { background: #d1d5db; }
-        .pend-btn-trace { background: #f0f4fa; color: #4a6fa5; }
-        .pend-btn-trace:hover { background: #dbeafe; }
-        .pend-btn-trace.on { background: #4a6fa5; color: #fff; }
-
         .energy-bars {
             display: flex;
             gap: 0.5rem;
@@ -114,9 +57,6 @@
             font-weight: 700;
         }
 
-        @media (max-width: 768px) {
-            .pend-readouts { grid-template-columns: repeat(2, 1fr); }
-        }
     </style>
 </head>
 <body>
@@ -176,29 +116,29 @@
                         <span class="control-value" id="angleValue" style="min-width:72px;">30&deg;</span>
                     </div>
 
-                    <div class="pend-readouts">
-                        <div class="pend-readout highlight">
-                            <div class="pr-num" id="periodReadout">2.20</div>
-                            <div class="pr-lbl">Period (s)</div>
+                    <div class="sim-readouts sim-readouts--4">
+                        <div class="sim-readout sim-readout--highlight">
+                            <div class="sim-readout__value" id="periodReadout">2.20</div>
+                            <div class="sim-readout__label">Period (s)</div>
                         </div>
-                        <div class="pend-readout">
-                            <div class="pr-num" id="freqReadout">0.45</div>
-                            <div class="pr-lbl">Frequency (Hz)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="freqReadout">0.45</div>
+                            <div class="sim-readout__label">Frequency (Hz)</div>
                         </div>
-                        <div class="pend-readout">
-                            <div class="pr-num" id="angleReadout">30.0</div>
-                            <div class="pr-lbl">Angle (&deg;)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="angleReadout">30.0</div>
+                            <div class="sim-readout__label">Angle (&deg;)</div>
                         </div>
-                        <div class="pend-readout">
-                            <div class="pr-num" id="speedReadout">0.00</div>
-                            <div class="pr-lbl">Max Speed (m/s)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="speedReadout">0.00</div>
+                            <div class="sim-readout__label">Max Speed (m/s)</div>
                         </div>
                     </div>
 
-                    <div class="pend-button-row">
-                        <button class="pend-btn pend-btn-pause" id="pauseBtn">Pause</button>
-                        <button class="pend-btn pend-btn-reset" id="resetBtn">Reset</button>
-                        <button class="pend-btn pend-btn-trace on" id="traceBtn">Show Trace</button>
+                    <div class="sim-actions">
+                        <button class="sim-btn sim-btn--primary" id="pauseBtn">Pause</button>
+                        <button class="sim-btn sim-btn--ghost" id="resetBtn">Reset</button>
+                        <button class="sim-btn sim-btn--soft is-active" id="traceBtn">Show Trace</button>
                         <div style="flex:1"></div>
                         <div class="energy-bars">
                             <div class="energy-bar-wrap">
@@ -275,434 +215,179 @@
 </footer>
 
 <script src="../index.js"></script>
+<script src="../library.js"></script>
 <script>
-'use strict';
+(() => {
+    'use strict';
 
-// ── Constants ──
-const PIVOT_X = 350, PIVOT_Y = 80;
-const PX_PER_METER = 130;
-const BOBS_PER_KG = 16;
-const DAMPING = 0.9995;
+    const canvas = document.getElementById('pendulumCanvas');
+    const T = SimLib.Theme.use('light');
 
-// ── State ──
-let length = 1.2;
-let mass = 1.0;
-let gravity = 9.8;
-let angleDeg = 30;
-let angle = angleDeg * Math.PI / 180;
-let angularVel = 0;
-let paused = false;
-let showTrace = true;
-let tracePoints = [];
-let periodTimer = 0;
-let lastSign = null;
-let measuredPeriod = null;
-let _crossingTimes = [];
+    class PendulumSim extends SimLib.Simulation {
+        onInit() {
+            // constants
+            this.PIVOT_X = 350; this.PIVOT_Y = 80;
+            this.PX_PER_METER = 130; this.BOBS_PER_KG = 16; this.DAMPING = 0.9995;
 
-// ── DOM ──
-const canvas = document.getElementById('pendulumCanvas');
-const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+            // state
+            this.length = 1.2; this.mass = 1.0; this.gravity = 9.8;
+            this.angleDeg = 30; this.angle = this.angleDeg * Math.PI / 180; this.angularVel = 0;
+            this.paused = false; this.showTrace = true; this.tracePoints = [];
+            this.periodTimer = 0; this.lastSign = null; this.measuredPeriod = null; this._crossingTimes = [];
 
-const lengthSlider  = document.getElementById('lengthSlider');
-const massSlider    = document.getElementById('massSlider');
-const gravitySlider = document.getElementById('gravitySlider');
-const angleSlider   = document.getElementById('angleSlider');
-const lengthValue   = document.getElementById('lengthValue');
-const massValue     = document.getElementById('massValue');
-const gravityValue  = document.getElementById('gravityValue');
-const angleValue    = document.getElementById('angleValue');
-const pauseBtn      = document.getElementById('pauseBtn');
-const resetBtn      = document.getElementById('resetBtn');
-const traceBtn      = document.getElementById('traceBtn');
+            // DOM refs
+            this.lengthSlider  = document.getElementById('lengthSlider');
+            this.massSlider    = document.getElementById('massSlider');
+            this.gravitySlider = document.getElementById('gravitySlider');
+            this.angleSlider   = document.getElementById('angleSlider');
+            this.lengthValue   = document.getElementById('lengthValue');
+            this.massValue     = document.getElementById('massValue');
+            this.gravityValue  = document.getElementById('gravityValue');
+            this.angleValue    = document.getElementById('angleValue');
+            this.pauseBtn      = document.getElementById('pauseBtn');
+            this.resetBtn      = document.getElementById('resetBtn');
+            this.traceBtn      = document.getElementById('traceBtn');
+            this.periodReadout = document.getElementById('periodReadout');
+            this.freqReadout   = document.getElementById('freqReadout');
+            this.angleReadout  = document.getElementById('angleReadout');
+            this.speedReadout  = document.getElementById('speedReadout');
+            this.keBar = document.getElementById('keBar');
+            this.peBar = document.getElementById('peBar');
+            this.keVal = document.getElementById('keVal');
+            this.peVal = document.getElementById('peVal');
+            this.totalEVal = document.getElementById('totalEVal');
 
-const periodReadout = document.getElementById('periodReadout');
-const freqReadout   = document.getElementById('freqReadout');
-const angleReadout  = document.getElementById('angleReadout');
-const speedReadout  = document.getElementById('speedReadout');
-const keBar = document.getElementById('keBar');
-const peBar = document.getElementById('peBar');
-const keVal = document.getElementById('keVal');
-const peVal = document.getElementById('peVal');
-const totalEVal = document.getElementById('totalEVal');
+            // canvas logical space (SimLib maps it onto the displayed size)
+            this.ctx = this.app.ctx;
+            this.W = this.logical.w;
+            this.H = this.logical.h;
 
-// ── Bob position ──
-function bobPos() {
-    const px = PIVOT_X + Math.sin(angle) * length * PX_PER_METER;
-    const py = PIVOT_Y + Math.cos(angle) * length * PX_PER_METER;
-    return { x: px, y: py };
-}
+            // wire controls
+            const resetPeriod = () => { this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; };
+            SimLib.UI.bindSlider(this.lengthSlider, { output: this.lengthValue, format: v => v.toFixed(2) + ' m', oninput: v => { this.length = v; resetPeriod(); } });
+            SimLib.UI.bindSlider(this.massSlider, { output: this.massValue, format: v => v.toFixed(1) + ' kg', oninput: v => { this.mass = v; } });
+            SimLib.UI.bindSlider(this.gravitySlider, { output: this.gravityValue, format: v => v.toFixed(1) + ' m/s²', oninput: v => { this.gravity = v; resetPeriod(); } });
+            SimLib.UI.bindSlider(this.angleSlider, { output: this.angleValue, format: v => v + '°', oninput: v => { this.angle = v * Math.PI / 180; this.angularVel = 0; resetPeriod(); this.tracePoints = []; } });
+            this.pauseBtn.addEventListener('click', () => { this.paused = !this.paused; this.pauseBtn.textContent = this.paused ? 'Resume' : 'Pause'; });
+            this.resetBtn.addEventListener('click', () => { this.angularVel = 0; const deg = +this.angleSlider.value; this.angle = deg * Math.PI / 180; this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; this.tracePoints = []; });
+            this.traceBtn.addEventListener('click', () => { this.showTrace = !this.showTrace; this.traceBtn.textContent = this.showTrace ? 'Show Trace' : 'Hide Trace'; this.traceBtn.classList.toggle('is-active', this.showTrace); if (!this.showTrace) this.tracePoints = []; });
 
-function bobPixelRadius() {
-    return 12 + mass * BOBS_PER_KG;
-}
+            // pointer drag
+            this.dragging = false;
+            this.canvas.addEventListener('pointerdown', (e) => {
+                const pos = this._getCanvasPos(e);
+                if (this._isNearBob(pos.x, pos.y)) {
+                    this.dragging = true; this.paused = true; this.pauseBtn.textContent = 'Resume'; this.canvas.style.cursor = 'grabbing'; this.canvas.setPointerCapture(e.pointerId); e.preventDefault();
+                }
+            });
+            this.canvas.addEventListener('pointermove', (e) => {
+                if (this.dragging) {
+                    const pos = this._getCanvasPos(e);
+                    const dx = pos.x - this.PIVOT_X; const dy = pos.y - this.PIVOT_Y; const dist = Math.sqrt(dx*dx + dy*dy);
+                    const maxDist = this.length * this.PX_PER_METER; const clampedDist = Math.min(dist, maxDist * 0.98);
+                    const newAngle = Math.atan2(dx, dy); this.angle = -newAngle; const deg = this.angle * 180 / Math.PI;
+                    this.angleSlider.value = Math.max(1, Math.min(85, Math.abs(Math.round(deg)))); this.angleValue.innerHTML = Math.abs(deg).toFixed(0) + '°'; this.angularVel = 0; this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; this.tracePoints = []; e.preventDefault();
+                } else if (!this.paused) {
+                    const pos = this._getCanvasPos(e); this.canvas.style.cursor = this._isNearBob(pos.x, pos.y) ? 'grab' : 'default';
+                }
+            });
+            this.canvas.addEventListener('pointerup', () => { this.dragging = false; this.canvas.style.cursor = 'default'; });
+            this.canvas.addEventListener('pointercancel', () => { this.dragging = false; this.canvas.style.cursor = 'default'; });
+        }
 
-// ── Energy ──
-function computeEnergy() {
-    const bob = bobPos();
-    const bobBaseY = PIVOT_Y + length * PX_PER_METER;
-    const h = (bobBaseY - bob.y) / PX_PER_METER;
-    const speed = Math.abs(angularVel) * length;
-    const ke = 0.5 * mass * speed * speed;
-    const pe = mass * gravity * h;
-    return { ke, pe, total: ke + pe };
-}
+        _getCanvasPos(e) {
+            return SimLib.CanvasUtils.eventPos(this.canvas, e);
+        }
+        _isNearBob(cx, cy) { const bob = this._bobPos(); const dist = Math.hypot(cx - bob.x, cy - bob.y); return dist < this._bobPixelRadius() + 14; }
 
-// ── Period tracking using zero-crossings ──
-function trackPeriod(dt) {
-    const sign = Math.sign(angle);
-    if (lastSign !== null && sign !== 0 && sign !== lastSign) {
-        _crossingTimes.push(periodTimer);
-        if (_crossingTimes.length > 20) _crossingTimes.shift();
-        if (_crossingTimes.length >= 3) {
-            // Average of last few half-periods × 2
-            const diffs = [];
-            for (let i = 1; i < _crossingTimes.length; i += 2) {
-                if (i + 1 < _crossingTimes.length) {
-                    diffs.push((_crossingTimes[i+1] - _crossingTimes[i-1]));
+        _bobPos() { const px = this.PIVOT_X + Math.sin(this.angle) * this.length * this.PX_PER_METER; const py = this.PIVOT_Y + Math.cos(this.angle) * this.length * this.PX_PER_METER; return { x: px, y: py }; }
+        _bobPixelRadius() { return 12 + this.mass * this.BOBS_PER_KG; }
+
+        _computeEnergy() { const bob = this._bobPos(); const bobBaseY = this.PIVOT_Y + this.length * this.PX_PER_METER; const h = (bobBaseY - bob.y) / this.PX_PER_METER; const speed = Math.abs(this.angularVel) * this.length; const ke = 0.5 * this.mass * speed * speed; const pe = this.mass * this.gravity * h; return { ke, pe, total: ke + pe }; }
+
+        _trackPeriod(dt) {
+            const sign = Math.sign(this.angle);
+            if (this.lastSign !== null && sign !== 0 && sign !== this.lastSign) {
+                this._crossingTimes.push(this.periodTimer);
+                if (this._crossingTimes.length > 20) this._crossingTimes.shift();
+                if (this._crossingTimes.length >= 3) {
+                    const diffs = [];
+                    for (let i = 1; i < this._crossingTimes.length; i += 2) {
+                        if (i + 1 < this._crossingTimes.length) diffs.push((this._crossingTimes[i+1] - this._crossingTimes[i-1]));
+                    }
+                    if (diffs.length > 0) this.measuredPeriod = diffs.reduce((a,b) => a+b, 0) / diffs.length;
                 }
             }
-            if (diffs.length > 0) {
-                measuredPeriod = diffs.reduce((a,b) => a+b, 0) / diffs.length;
+            if (sign !== 0) this.lastSign = sign;
+            this.periodTimer += dt;
+        }
+
+        onTick(dt) {
+            if (this.paused) return;
+            const subSteps = 4; const subDt = dt / subSteps;
+            for (let s = 0; s < subSteps; s++) {
+                const alpha = -(this.gravity / this.length) * Math.sin(this.angle);
+                this.angularVel += alpha * subDt;
+                this.angularVel *= this.DAMPING;
+                this.angle += this.angularVel * subDt;
+            }
+            this._trackPeriod(dt);
+            if (Math.abs(this.angularVel) > 15) this.angularVel = 15 * Math.sign(this.angularVel);
+            // trace
+            if (this.showTrace && !this.paused && Math.abs(this.angularVel) > 0.01) {
+                const bob = this._bobPos(); this.tracePoints.push({ x: bob.x, y: bob.y });
+                const MAX_TRACE = 250; if (this.tracePoints.length > MAX_TRACE) this.tracePoints = this.tracePoints.slice(-MAX_TRACE);
             }
         }
-    }
-    if (sign !== 0) lastSign = sign;
-    periodTimer += dt;
-}
 
-// ── Physics ──
-function updatePhysics(dt) {
-    if (paused) return;
+        onDraw(ctx) {
+            const W = this.W, H = this.H;
+            ctx.clearRect(0, 0, W, H);
+            SimLib.Draw.background(ctx, W, H, T);
+            SimLib.Draw.grid(ctx, W, H, { step: 40, color: 'rgba(26, 42, 78, 0.035)', lineWidth: 1, theme: T });
+            SimLib.Draw.title(ctx, 'Pendulum', 14, 22, { size: 13, color: T.muted, theme: T });
+            // ceiling
+            ctx.fillStyle = T.text; ctx.fillRect(0, this.PIVOT_Y - 14, W, 18);
+            ctx.fillStyle = T.muted; ctx.fillRect(0, this.PIVOT_Y - 14, W, 3);
+            ctx.fillStyle = T.ink; ctx.fillRect(0, this.PIVOT_Y + 2, W, 2);
+            // reference line
+            ctx.setLineDash([4,6]); ctx.strokeStyle = T.gridStrong; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(this.PIVOT_X, this.PIVOT_Y); ctx.lineTo(this.PIVOT_X, this.PIVOT_Y + this.length * this.PX_PER_METER); ctx.stroke(); ctx.setLineDash([]);
+            // angle arc
+            if (Math.abs(this.angleDeg) > 1) {
+                const arcR = 55; ctx.strokeStyle = T.faint; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(this.PIVOT_X, this.PIVOT_Y, arcR, -Math.PI/2, -Math.PI/2 - this.angle, this.angle < 0); ctx.stroke(); const midA = -Math.PI/2 - this.angle/2; ctx.fillStyle = T.muted; ctx.font = T.font(10, 'bold'); ctx.textAlign = 'center'; ctx.fillText(Math.abs(this.angleDeg).toFixed(0) + '\u00B0', this.PIVOT_X + (arcR + 20) * Math.cos(midA), this.PIVOT_Y + (arcR + 20) * Math.sin(midA));
+            }
+            // trace
+            if (this.showTrace && this.tracePoints.length > 1) {
+                const tc = SimLib.Color.parse(T.accent);
+                ctx.strokeStyle = `rgba(${tc.r}, ${tc.g}, ${tc.b}, 0.25)`; ctx.lineWidth = 2; ctx.setLineDash([2,4]); ctx.beginPath(); for (let i = 0; i < this.tracePoints.length; i++) { i===0?ctx.moveTo(this.tracePoints[i].x,this.tracePoints[i].y):ctx.lineTo(this.tracePoints[i].x,this.tracePoints[i].y);} ctx.stroke(); ctx.setLineDash([]);
+            }
+            // string
+            const bob = this._bobPos(); ctx.strokeStyle = T.ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(this.PIVOT_X, this.PIVOT_Y); ctx.lineTo(bob.x, bob.y); ctx.stroke();
+            // pivot bolt
+            const boltGrad = ctx.createRadialGradient(this.PIVOT_X - 2, this.PIVOT_Y - 1, 1, this.PIVOT_X, this.PIVOT_Y, 9);
+            boltGrad.addColorStop(0, T.faint); boltGrad.addColorStop(0.6, T.muted); boltGrad.addColorStop(1, T.ink); ctx.fillStyle = boltGrad; ctx.beginPath(); ctx.arc(this.PIVOT_X, this.PIVOT_Y, 9, 0, Math.PI*2); ctx.fill();
+            // bob
+            const bobR = this._bobPixelRadius(); const bobGrad = ctx.createRadialGradient(bob.x - bobR*0.3, bob.y - bobR*0.35, bobR*0.05, bob.x, bob.y, bobR); bobGrad.addColorStop(0, SimLib.Color.lighten(T.accent, 0.55)); bobGrad.addColorStop(0.4, T.accent); bobGrad.addColorStop(0.7, T.accentDark); bobGrad.addColorStop(1, SimLib.Color.darken(T.accent, 0.35)); ctx.fillStyle = bobGrad; ctx.beginPath(); ctx.arc(bob.x, bob.y, bobR, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(bob.x - bobR*0.25, bob.y - bobR*0.3, bobR*0.32, 0, Math.PI*2); ctx.fill();
+            // speed indicator
+            const speed = Math.abs(this.angularVel * this.length);
+            if (speed > 0.02) { const vDir = Math.sign(this.angularVel); const dc = SimLib.Color.parse(T.danger); ctx.fillStyle = `rgba(${dc.r}, ${dc.g}, ${dc.b}, 0.75)`; ctx.font = T.font(9, 'bold'); ctx.textAlign = 'center'; ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 16); ctx.strokeStyle = `rgba(${dc.r}, ${dc.g}, ${dc.b}, 0.6)`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(bob.x - vDir * 10, bob.y); ctx.lineTo(bob.x, bob.y); ctx.stroke(); }
+            if (this.paused) { ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0,0,W,H); ctx.fillStyle = T.muted; ctx.font = T.font(24, 'bold'); ctx.textAlign = 'center'; ctx.fillText('PAUSED', W/2, H/2 + 30); }
+        }
 
-    // RK4-style: sub-step for accuracy
-    const subSteps = 4;
-    const subDt = dt / subSteps;
-
-    for (let s = 0; s < subSteps; s++) {
-        const alpha = -(gravity / length) * Math.sin(angle);
-        angularVel += alpha * subDt;
-        angularVel *= DAMPING;
-        angle += angularVel * subDt;
-    }
-
-    trackPeriod(dt);
-
-    // Clamp energy (prevent numerical runaway)
-    if (Math.abs(angularVel) > 15) angularVel = 15 * Math.sign(angularVel);
-}
-
-// ── Drawing ──
-function draw() {
-    ctx.clearRect(0, 0, W, H);
-
-    // Background
-    ctx.fillStyle = '#fafbfc';
-    ctx.fillRect(0, 0, W, H);
-
-    // Ceiling
-    ctx.fillStyle = '#6b5230';
-    ctx.fillRect(0, PIVOT_Y - 14, W, 18);
-    ctx.fillStyle = '#8b7355';
-    ctx.fillRect(0, PIVOT_Y - 14, W, 3);
-    ctx.fillStyle = '#4d3724';
-    ctx.fillRect(0, PIVOT_Y + 2, W, 2);
-
-    // Reference line (vertical at rest)
-    ctx.setLineDash([4, 6]);
-    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PIVOT_X, PIVOT_Y);
-    ctx.lineTo(PIVOT_X, PIVOT_Y + length * PX_PER_METER);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Angle arc
-    if (Math.abs(angleDeg) > 1) {
-        const arcR = 55;
-        ctx.strokeStyle = 'rgba(100,100,100,0.25)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(PIVOT_X, PIVOT_Y, arcR, -Math.PI/2, -Math.PI/2 - angle, angle < 0);
-        ctx.stroke();
-        const midA = -Math.PI/2 - angle/2;
-        ctx.fillStyle = 'rgba(80,80,80,0.4)';
-        ctx.font = 'bold 10px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(Math.abs(angleDeg).toFixed(0) + '\u00B0', PIVOT_X + (arcR + 20) * Math.cos(midA), PIVOT_Y + (arcR + 20) * Math.sin(midA));
-        // Tick marks on arc
-        for (let a = -85; a <= 85; a += 15) {
-            if (Math.abs(angleDeg) < Math.abs(a) + 3) continue;
-            const ta = -Math.PI/2 - a * Math.PI/180;
-            ctx.beginPath();
-            ctx.arc(PIVOT_X, PIVOT_Y, arcR - 5, ta - 0.02, ta + 0.02);
-            ctx.stroke();
+        updateUI() {
+            const deg = this.angle * 180 / Math.PI; this.angleDeg = deg; const speed = Math.abs(this.angularVel * this.length);
+            let period; if (this.measuredPeriod !== null) period = this.measuredPeriod; else period = 2 * Math.PI * Math.sqrt(this.length / this.gravity);
+            const freq = 1 / period; const e = this._computeEnergy(); const maxPE = this.mass * this.gravity * this.length;
+            this.periodReadout.textContent = period.toFixed(2); this.freqReadout.textContent = freq.toFixed(2); this.angleReadout.textContent = Math.abs(deg).toFixed(1); this.speedReadout.textContent = speed.toFixed(2);
+            const kePct = Math.min(100, (e.ke / maxPE) * 100); const pePct = Math.min(100, (e.pe / maxPE) * 100); this.keBar.style.height = kePct.toFixed(0) + '%'; this.peBar.style.height = pePct.toFixed(0) + '%'; this.keVal.textContent = e.ke.toFixed(3) + ' J'; this.peVal.textContent = e.pe.toFixed(3) + ' J'; this.totalEVal.textContent = e.total.toFixed(3) + ' J';
         }
     }
 
-    // Trace drawn behind everything
-    if (showTrace && tracePoints.length > 1) {
-        ctx.strokeStyle = 'rgba(74, 111, 165, 0.25)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([2, 4]);
-        ctx.beginPath();
-        for (let i = 0; i < tracePoints.length; i++) {
-            i === 0 ? ctx.moveTo(tracePoints[i].x, tracePoints[i].y) : ctx.lineTo(tracePoints[i].x, tracePoints[i].y);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
-        // Fade trace dots
-        for (let i = 0; i < tracePoints.length; i += Math.max(1, Math.floor(tracePoints.length / 60))) {
-            const alpha = 0.08 + 0.22 * (i / tracePoints.length);
-            ctx.fillStyle = 'rgba(74, 111, 165, ' + alpha.toFixed(2) + ')';
-            ctx.beginPath();
-            ctx.arc(tracePoints[i].x, tracePoints[i].y, 1.8, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
+    // attach and start
+    const app = SimLib.attach({ canvas, logicalWidth: 700, logicalHeight: 480, SimulationClass: PendulumSim });
+    app.sim.start();
 
-    // String
-    const bob = bobPos();
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(PIVOT_X, PIVOT_Y);
-    ctx.lineTo(bob.x, bob.y);
-    ctx.stroke();
-
-    // String highlight
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PIVOT_X + 1, PIVOT_Y);
-    ctx.lineTo(bob.x + 1, bob.y);
-    ctx.stroke();
-
-    // Pivot bolt
-    const boltGrad = ctx.createRadialGradient(PIVOT_X - 2, PIVOT_Y - 1, 1, PIVOT_X, PIVOT_Y, 9);
-    boltGrad.addColorStop(0, '#999');
-    boltGrad.addColorStop(0.6, '#555');
-    boltGrad.addColorStop(1, '#222');
-    ctx.fillStyle = boltGrad;
-    ctx.beginPath();
-    ctx.arc(PIVOT_X, PIVOT_Y, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.beginPath();
-    ctx.arc(PIVOT_X - 2, PIVOT_Y - 2, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bob gradient
-    const bobR = bobPixelRadius();
-    const bobGrad = ctx.createRadialGradient(bob.x - bobR*0.3, bob.y - bobR*0.35, bobR*0.05, bob.x, bob.y, bobR);
-    bobGrad.addColorStop(0, '#e8d5b7');
-    bobGrad.addColorStop(0.4, '#c4934a');
-    bobGrad.addColorStop(0.7, '#8b5e2b');
-    bobGrad.addColorStop(1, '#5a3612');
-    ctx.fillStyle = bobGrad;
-    ctx.beginPath();
-    ctx.arc(bob.x, bob.y, bobR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bob highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.beginPath();
-    ctx.arc(bob.x - bobR*0.25, bob.y - bobR*0.3, bobR*0.32, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Speed indicator (small arrow on bob)
-    const speed = Math.abs(angularVel * length);
-    if (speed > 0.02) {
-        const vDir = Math.sign(angularVel);
-        const arrowX = bob.x + vDir * (bobR + 5);
-        const arrowY = bob.y;
-        ctx.fillStyle = 'rgba(200,60,60,0.6)';
-        ctx.font = 'bold 9px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 16);
-        // Mini arrow
-        ctx.strokeStyle = 'rgba(200,60,60,0.5)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(arrowX - vDir * 10, arrowY);
-        ctx.lineTo(arrowX, arrowY);
-        ctx.stroke();
-    }
-
-    // Pause overlay
-    if (paused) {
-        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.font = 'bold 24px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('PAUSED', W/2, H/2 + 30);
-    }
-}
-
-// ── Update UI readouts ──
-function updateUI() {
-    const deg = angle * 180 / Math.PI;
-    angleDeg = deg;
-    const speed = Math.abs(angularVel * length);
-    let period;
-    if (measuredPeriod !== null) {
-        period = measuredPeriod;
-    } else {
-        // Small-angle formula
-        period = 2 * Math.PI * Math.sqrt(length / gravity);
-    }
-    const freq = 1 / period;
-    const e = computeEnergy();
-    const maxPE = mass * gravity * length;
-
-    periodReadout.textContent = period.toFixed(2);
-    freqReadout.textContent = freq.toFixed(2);
-    angleReadout.textContent = Math.abs(deg).toFixed(1);
-    speedReadout.textContent = speed.toFixed(2);
-
-    const kePct = Math.min(100, (e.ke / maxPE) * 100);
-    const pePct = Math.min(100, (e.pe / maxPE) * 100);
-    keBar.style.height = kePct.toFixed(0) + '%';
-    peBar.style.height = pePct.toFixed(0) + '%';
-    keVal.textContent = e.ke.toFixed(3) + ' J';
-    peVal.textContent = e.pe.toFixed(3) + ' J';
-    totalEVal.textContent = e.total.toFixed(3) + ' J';
-}
-
-// ── Slider handlers ──
-lengthSlider.addEventListener('input', () => {
-    length = +lengthSlider.value;
-    lengthValue.textContent = length.toFixed(2) + ' m';
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-});
-massSlider.addEventListener('input', () => {
-    mass = +massSlider.value;
-    massValue.textContent = mass.toFixed(1) + ' kg';
-});
-gravitySlider.addEventListener('input', () => {
-    gravity = +gravitySlider.value;
-    gravityValue.textContent = gravity.toFixed(1) + ' m/s\u00B2';
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-});
-angleSlider.addEventListener('input', () => {
-    const deg = +angleSlider.value;
-    angle = deg * Math.PI / 180;
-    angleValue.innerHTML = deg + '&deg;';
-    angularVel = 0;
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-    tracePoints = [];
-});
-
-pauseBtn.addEventListener('click', () => {
-    paused = !paused;
-    pauseBtn.textContent = paused ? 'Resume' : 'Pause';
-});
-resetBtn.addEventListener('click', () => {
-    angularVel = 0;
-    const deg = +angleSlider.value;
-    angle = deg * Math.PI / 180;
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-    tracePoints = [];
-});
-traceBtn.addEventListener('click', () => {
-    showTrace = !showTrace;
-    traceBtn.textContent = showTrace ? 'Show Trace' : 'Hide Trace';
-    traceBtn.classList.toggle('on', showTrace);
-    if (!showTrace) tracePoints = [];
-});
-
-// ── Bob drag (mouse) ──
-let dragging = false;
-function getCanvasPos(e) {
-    const r = canvas.getBoundingClientRect();
-    return {
-        x: (e.clientX - r.left) * (W / r.width),
-        y: (e.clientY - r.top) * (H / r.height)
-    };
-}
-function isNearBob(cx, cy) {
-    const bob = bobPos();
-    const dist = Math.sqrt((cx - bob.x)*(cx - bob.x) + (cy - bob.y)*(cy - bob.y));
-    return dist < bobPixelRadius() + 14;
-}
-
-canvas.addEventListener('pointerdown', (e) => {
-    const pos = getCanvasPos(e);
-    if (isNearBob(pos.x, pos.y)) {
-        dragging = true;
-        paused = true;
-        pauseBtn.textContent = 'Resume';
-        canvas.style.cursor = 'grabbing';
-        canvas.setPointerCapture(e.pointerId);
-        e.preventDefault();
-    }
-});
-canvas.addEventListener('pointermove', (e) => {
-    if (dragging) {
-        const pos = getCanvasPos(e);
-        const dx = pos.x - PIVOT_X;
-        const dy = pos.y - PIVOT_Y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        // Clamp to roughly the string length
-        const maxDist = length * PX_PER_METER;
-        const clampedDist = Math.min(dist, maxDist * 0.98);
-        const newAngle = Math.atan2(dx, dy);
-        angle = -newAngle;
-        const deg = angle * 180 / Math.PI;
-        angleSlider.value = Math.max(1, Math.min(85, Math.abs(Math.round(deg))));
-        angleValue.innerHTML = Math.abs(deg).toFixed(0) + '&deg;';
-        angularVel = 0;
-        _crossingTimes = [];
-        measuredPeriod = null;
-        periodTimer = 0;
-        lastSign = null;
-        tracePoints = [];
-        e.preventDefault();
-    } else if (!paused) {
-        const pos = getCanvasPos(e);
-        canvas.style.cursor = isNearBob(pos.x, pos.y) ? 'grab' : 'default';
-    }
-});
-canvas.addEventListener('pointerup', () => {
-    dragging = false;
-    canvas.style.cursor = 'default';
-});
-canvas.addEventListener('pointercancel', () => {
-    dragging = false;
-    canvas.style.cursor = 'default';
-});
-
-// ── Animation ──
-let lastTime = 0, animId = null;
-const MAX_TRACE = 250;
-
-function tick(ts) {
-    if (!lastTime) lastTime = ts;
-    let dt = (ts - lastTime) / 1000;
-    lastTime = ts;
-    if (dt > 0.05) dt = 0.016;
-
-    updatePhysics(dt);
-
-    // Record trace point (slightly filter: every 3rd frame)
-    if (showTrace && !paused && Math.abs(angularVel) > 0.01) {
-        const bob = bobPos();
-        tracePoints.push({ x: bob.x, y: bob.y });
-        if (tracePoints.length > MAX_TRACE) tracePoints = tracePoints.slice(-MAX_TRACE);
-    }
-
-    draw();
-    updateUI();
-    animId = requestAnimationFrame(tick);
-}
-
-// ── Init ──
-updateUI();
-animId = requestAnimationFrame(tick);
-
-window.addEventListener('beforeunload', () => { if (animId) cancelAnimationFrame(animId); });
+})();
 </script>
 </body>
 </html>

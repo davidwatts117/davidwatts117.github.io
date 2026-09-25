@@ -9,132 +9,6 @@
     <style>
         #titrCanvas { width: 100%; max-width: 700px; height: auto; aspect-ratio: 700 / 480; display: block; border-radius: 8px; background: #fafbfc; cursor: default; }
 
-        .titr-scenario {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .titr-scen-btn {
-            flex: 1;
-            min-width: 100px;
-            padding: 0.55rem 0.5rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            background: #fff;
-            font-family: inherit;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #555;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .titr-scen-btn:hover { border-color: #999; color: #333; }
-        .titr-scen-btn.active { border-color: #4a6fa5; background: #eef3fa; color: #4a6fa5; }
-
-        .titr-drip-control {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.5rem 0;
-        }
-        .titr-drip-btn {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            border: 2px solid #d1d5db;
-            background: #fff;
-            font-size: 1.5rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
-            font-family: inherit;
-            color: #4a6fa5;
-        }
-        .titr-drip-btn:hover { border-color: #4a6fa5; background: #eef3fa; }
-        .titr-drip-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .titr-drip-label {
-            text-align: center;
-            font-weight: 700;
-            color: #1a1a2e;
-            min-width: 100px;
-        }
-        .titr-drip-val {
-            font-size: 1.3rem;
-            font-variant-numeric: tabular-nums;
-        }
-        .titr-drip-unit {
-            font-size: 0.75rem;
-            color: #888;
-            font-weight: 600;
-        }
-
-        .titr-quick-btn {
-            flex: 1;
-            min-width: 40px;
-            padding: 0.4rem 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            background: #fff;
-            font-family: inherit;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #4a6fa5;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .titr-quick-btn:hover { border-color: #4a6fa5; background: #eef3fa; }
-
-        .titr-readouts {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.6rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #e9ecef;
-        }
-        .titr-read {
-            text-align: center;
-            padding: 0.5rem 0.3rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .titr-read .tr-num {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: #1a1a2e;
-            font-variant-numeric: tabular-nums;
-        }
-        .titr-read .tr-lbl {
-            font-size: 0.65rem;
-            color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .titr-read.highlight .tr-num { color: #4a6fa5; }
-        .titr-read.equiv .tr-num { color: #2d7d46; }
-
-        .titr-reset-btn {
-            width: 100%;
-            padding: 0.55rem;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: #fff;
-            font-family: inherit;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .titr-reset-btn:hover { background: #f5f5f5; color: #333; }
-
-        @media (max-width: 768px) {
-            .titr-readouts { grid-template-columns: repeat(2, 1fr); }
-        }
     </style>
 </head>
 <body>
@@ -168,47 +42,47 @@
 
                 <div class="controls-panel">
                     <!-- Scenario picker -->
-                    <div class="titr-scenario" id="scenarioPick">
-                        <button class="titr-scen-btn active" data-scen="strong-strong">Strong Acid + Strong Base</button>
-                        <button class="titr-scen-btn" data-scen="weak-strong">Weak Acid + Strong Base</button>
-                        <button class="titr-scen-btn" data-scen="strong-weak">Strong Acid + Weak Base</button>
+                    <div class="sim-seg" id="scenarioPick">
+                        <button class="sim-seg__btn is-active" data-scen="strong-strong">Strong Acid + Strong Base</button>
+                        <button class="sim-seg__btn" data-scen="weak-strong">Weak Acid + Strong Base</button>
+                        <button class="sim-seg__btn" data-scen="strong-weak">Strong Acid + Weak Base</button>
                     </div>
 
                     <!-- Drip control -->
-                    <div class="titr-drip-control">
-                        <button class="titr-drip-btn" id="dripDown">−</button>
-                        <div class="titr-drip-label">
-                            <div class="titr-drip-val" id="volumeAdded">0.00</div>
-                            <div class="titr-drip-unit">mL titrant added</div>
+                    <div class="sim-stepper">
+                        <button class="sim-iconbtn" id="dripDown">−</button>
+                        <div class="sim-stepper__display">
+                            <div class="sim-stepper__value" id="volumeAdded">0.00</div>
+                            <div class="sim-stepper__unit">mL titrant added</div>
                         </div>
-                        <button class="titr-drip-btn" id="dripUp">+</button>
+                        <button class="sim-iconbtn" id="dripUp">+</button>
                     </div>
 
                     <!-- Quick-add buttons -->
                     <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
-                        <button class="titr-quick-btn" data-amt="0.1">+0.1 mL</button>
-                        <button class="titr-quick-btn" data-amt="0.5">+0.5 mL</button>
-                        <button class="titr-quick-btn" data-amt="1.0">+1 mL</button>
-                        <button class="titr-quick-btn" data-amt="5.0">+5 mL</button>
-                        <button class="titr-quick-btn" data-amt="25.0">+25 mL</button>
+                        <button class="sim-chip" data-amt="0.1">+0.1 mL</button>
+                        <button class="sim-chip" data-amt="0.5">+0.5 mL</button>
+                        <button class="sim-chip" data-amt="1.0">+1 mL</button>
+                        <button class="sim-chip" data-amt="5.0">+5 mL</button>
+                        <button class="sim-chip" data-amt="25.0">+25 mL</button>
                     </div>
 
-                    <div class="titr-readouts">
-                        <div class="titr-read highlight">
-                            <div class="tr-num" id="phReadout">1.00</div>
-                            <div class="tr-lbl">pH</div>
+                    <div class="sim-readouts sim-readouts--3">
+                        <div class="sim-readout sim-readout--highlight">
+                            <div class="sim-readout__value" id="phReadout">1.00</div>
+                            <div class="sim-readout__label">pH</div>
                         </div>
-                        <div class="titr-read equiv">
-                            <div class="tr-num" id="equivVol">25.0</div>
-                            <div class="tr-lbl">Equiv. Vol (mL)</div>
+                        <div class="sim-readout sim-readout--success">
+                            <div class="sim-readout__value" id="equivVol">25.0</div>
+                            <div class="sim-readout__label">Equiv. Vol (mL)</div>
                         </div>
-                        <div class="titr-read">
-                            <div class="tr-num" id="equivPH">7.00</div>
-                            <div class="tr-lbl">pH at Equiv.</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="equivPH">7.00</div>
+                            <div class="sim-readout__label">pH at Equiv.</div>
                         </div>
                     </div>
 
-                    <button class="titr-reset-btn" id="resetBtn">↺ Reset Titration</button>
+                    <button class="sim-btn sim-btn--outline sim-btn--block" id="resetBtn">↺ Reset Titration</button>
                 </div>
             </div>
 
@@ -265,11 +139,13 @@
 </footer>
 
 <script src="../index.js"></script>
+<script src="../library.js"></script>
 <script>
 'use strict';
 
 // ═══ Constants ═══
 const canvas = document.getElementById('titrCanvas');
+const T = SimLib.Theme.use('light');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
@@ -374,8 +250,8 @@ function computePH(volAdded) {
 // ═══ Drawing ═══
 function draw() {
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#fafbfc';
-    ctx.fillRect(0, 0, W, H);
+    SimLib.Draw.background(ctx, W, H, T);
+    SimLib.Draw.title(ctx, 'Titration', 14, 22, { size: 13, color: T.muted, theme: T });
 
     // ── Left side: Lab apparatus ──
     const labW = 280;
@@ -395,8 +271,8 @@ function drawLabApparatus(labW) {
     const buretteBottom = buretteTop + buretteH;
 
     // Burette body
-    ctx.fillStyle = '#e8f0fe';
-    ctx.strokeStyle = '#6b8ab5';
+    ctx.fillStyle = T.accentSoft;
+    ctx.strokeStyle = T.accent;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(buretteX, buretteTop);
@@ -422,13 +298,13 @@ function drawLabApparatus(labW) {
     }
 
     // Tick marks
-    ctx.fillStyle = '#6b8ab5';
-    ctx.font = '8px system-ui, sans-serif';
+    ctx.fillStyle = T.accent;
+    ctx.font = T.font(8);
     ctx.textAlign = 'right';
     for (let mL = 0; mL <= 50; mL += 5) {
         const y = buretteBottom - 10 - (mL / maxML) * (buretteH - 30);
         ctx.fillText(mL, buretteX - 6, y + 3);
-        ctx.strokeStyle = '#b0c4de';
+        ctx.strokeStyle = T.borderStrong;
         ctx.lineWidth = 0.5;
         ctx.beginPath();
         ctx.moveTo(buretteX + 2, y);
@@ -436,18 +312,18 @@ function drawLabApparatus(labW) {
         ctx.stroke();
     }
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#4a6fa5';
-    ctx.font = 'bold 9px system-ui, sans-serif';
+    ctx.fillStyle = T.accent;
+    ctx.font = T.font(9, 'bold');
     ctx.fillText('NaOH', buretteX + buretteW/2, buretteTop - 10);
     ctx.fillText(baseConc.toFixed(2) + ' M', buretteX + buretteW/2, buretteBottom + 12);
 
     // Stopcock
     const stopcockY = buretteBottom - 10;
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = T.muted;
     ctx.beginPath();
     ctx.roundRect(buretteX - 6, stopcockY - 4, buretteW + 12, 10, 3);
     ctx.fill();
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = T.text;
     ctx.beginPath();
     ctx.arc(buretteX + buretteW/2, stopcockY + 1, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -473,8 +349,8 @@ function drawLabApparatus(labW) {
     const flaskBottom = flaskTop + flaskH;
 
     // Flask body (Erlenmeyer shape)
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#888';
+    ctx.fillStyle = T.surface;
+    ctx.strokeStyle = T.muted;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(flaskCX - flaskW/2 + 25, flaskTop);
@@ -488,8 +364,8 @@ function drawLabApparatus(labW) {
     ctx.stroke();
 
     // Flask neck
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#888';
+    ctx.fillStyle = T.surface;
+    ctx.strokeStyle = T.muted;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.rect(flaskCX - 16, flaskTop - 6, 32, 12);
@@ -513,8 +389,8 @@ function drawLabApparatus(labW) {
     ctx.globalAlpha = 1;
 
     // Flask label
-    ctx.fillStyle = '#4a6fa5';
-    ctx.font = 'bold 9px system-ui, sans-serif';
+    ctx.fillStyle = T.accent;
+    ctx.font = T.font(9, 'bold');
     ctx.textAlign = 'center';
     const acidLabel = scenario === 'strong-strong' ? 'HCl' : scenario === 'weak-strong' ? 'CH\u2083COOH' : 'HCl';
     ctx.fillText(acidLabel, flaskCX, flaskBottom + 16);
@@ -522,41 +398,41 @@ function drawLabApparatus(labW) {
 
     // ── pH meter ──
     const pHMeterX = flaskCX + flaskW/2 + 20, pHMeterY = flaskTop;
-    ctx.fillStyle = '#f8f9fa';
-    ctx.strokeStyle = '#555';
+    ctx.fillStyle = T.surface2;
+    ctx.strokeStyle = T.ink;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.roundRect(pHMeterX, pHMeterY, 50, 70, 6);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#1a1a2e';
-    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.fillStyle = T.ink;
+    ctx.font = T.font(18, 'bold');
     ctx.textAlign = 'center';
     ctx.fillText(pH.toFixed(2), pHMeterX + 25, pHMeterY + 32);
-    ctx.fillStyle = '#888';
-    ctx.font = 'bold 9px system-ui, sans-serif';
+    ctx.fillStyle = T.muted;
+    ctx.font = T.font(9, 'bold');
     ctx.fillText('pH', pHMeterX + 25, pHMeterY + 50);
     // Probe wire
-    ctx.strokeStyle = '#999';
+    ctx.strokeStyle = T.faint;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(pHMeterX, pHMeterY + 15);
     ctx.quadraticCurveTo(flaskCX, flaskTop - 20, flaskCX, flaskTop + 5);
     ctx.stroke();
     // Probe tip in flask
-    ctx.fillStyle = '#555';
+    ctx.fillStyle = T.ink;
     ctx.beginPath();
     ctx.arc(flaskCX, flaskTop + 10, 3, 0, Math.PI * 2);
     ctx.fill();
 
     // Magnetic stirrer
     const stirY = flaskBottom + 44;
-    ctx.fillStyle = '#d1d5db';
+    ctx.fillStyle = T.borderStrong;
     ctx.beginPath();
     ctx.roundRect(flaskCX - 35, stirY, 70, 14, 4);
     ctx.fill();
-    ctx.fillStyle = '#9ca3af';
-    ctx.font = '8px system-ui, sans-serif';
+    ctx.fillStyle = T.faint;
+    ctx.font = T.font(8);
     ctx.textAlign = 'center';
     ctx.fillText('Stirrer', flaskCX, stirY + 10);
     // Stir bar in flask
@@ -565,7 +441,7 @@ function drawLabApparatus(labW) {
     ctx.save();
     ctx.translate(flaskCX, flaskBottom - 10);
     ctx.rotate(stirAngle);
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = T.faint;
     ctx.beginPath();
     ctx.roundRect(-stirLen/2, -2.5, stirLen, 5, 2);
     ctx.fill();
@@ -614,7 +490,7 @@ function drawPHBar(x, y, w) {
 
     // Current pH indicator
     const pHX = x + (pH / 14) * w;
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = T.ink;
     ctx.beginPath();
     ctx.moveTo(pHX, y - 6);
     ctx.lineTo(pHX - 5, y - 2);
@@ -627,14 +503,14 @@ function drawPHBar(x, y, w) {
     ctx.fill();
 
     // pH label
-    ctx.fillStyle = '#1a1a2e';
-    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.fillStyle = T.ink;
+    ctx.font = T.font(10, 'bold');
     ctx.textAlign = 'center';
     ctx.fillText('pH ' + pH.toFixed(2), pHX, y - 8);
 
     // Tick marks
-    ctx.fillStyle = '#666';
-    ctx.font = '8px system-ui, sans-serif';
+    ctx.fillStyle = T.text;
+    ctx.font = T.font(8);
     ctx.textAlign = 'center';
     for (let p = 0; p <= 14; p += 2) {
         const tx = x + (p / 14) * w;
@@ -647,7 +523,7 @@ function drawPHCurve(cx, cy, cw, ch) {
     const maxVol = Math.max(eqVol * 2 + 5, volumeAdded + 5);
 
     // Axes
-    ctx.strokeStyle = '#333';
+    ctx.strokeStyle = T.ink;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -656,8 +532,8 @@ function drawPHCurve(cx, cy, cw, ch) {
     ctx.stroke();
 
     // Labels
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillStyle = T.ink;
+    ctx.font = T.font(11, 'bold');
     ctx.textAlign = 'center';
     ctx.fillText('Volume of Titrant Added (mL)', cx + cw/2, cy + ch + 30);
     ctx.save();
@@ -667,13 +543,13 @@ function drawPHCurve(cx, cy, cw, ch) {
     ctx.restore();
 
     // Y-axis ticks
-    ctx.fillStyle = '#888';
-    ctx.font = '8px system-ui, sans-serif';
+    ctx.fillStyle = T.muted;
+    ctx.font = T.font(8);
     ctx.textAlign = 'right';
     for (let p = 0; p <= 14; p += 2) {
         const y = cy + ch - (p / 14) * ch;
         ctx.fillText(p, cx - 6, y + 3);
-        ctx.strokeStyle = '#e0e0e0';
+        ctx.strokeStyle = T.grid;
         ctx.lineWidth = 0.5;
         ctx.beginPath();
         ctx.moveTo(cx, y);
@@ -682,13 +558,13 @@ function drawPHCurve(cx, cy, cw, ch) {
     }
 
     // X-axis ticks
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = T.muted;
     ctx.textAlign = 'center';
     const tickStep = maxVol > 100 ? 25 : maxVol > 50 ? 10 : 5;
     for (let v = 0; v <= maxVol; v += tickStep) {
         const x = cx + (v / maxVol) * cw;
         ctx.fillText(v, x, cy + ch + 14);
-        ctx.strokeStyle = '#e0e0e0';
+        ctx.strokeStyle = T.grid;
         ctx.lineWidth = 0.5;
         ctx.beginPath();
         ctx.moveTo(x, cy);
@@ -698,7 +574,7 @@ function drawPHCurve(cx, cy, cw, ch) {
 
     // Equivalence point line
     const eqX = cx + (eqVol / maxVol) * cw;
-    ctx.strokeStyle = '#2d7d46';
+    ctx.strokeStyle = T.success;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -706,8 +582,8 @@ function drawPHCurve(cx, cy, cw, ch) {
     ctx.lineTo(eqX, cy + ch);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = '#2d7d46';
-    ctx.font = 'bold 9px system-ui, sans-serif';
+    ctx.fillStyle = T.success;
+    ctx.font = T.font(9, 'bold');
     ctx.fillText('Equiv: ' + eqVol.toFixed(1) + ' mL', eqX, cy - 4);
 
     // Draw pH curve
@@ -730,7 +606,7 @@ function drawPHCurve(cx, cy, cw, ch) {
     ctx.fill();
 
     // Curve line
-    ctx.strokeStyle = '#4a6fa5';
+    ctx.strokeStyle = T.accent;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
@@ -740,11 +616,11 @@ function drawPHCurve(cx, cy, cw, ch) {
     // Current point highlight
     const curX = cx + (volumeAdded / maxVol) * cw;
     const curY = cy + ch - (computePH(volumeAdded) / 14) * ch;
-    ctx.fillStyle = '#e05252';
+    ctx.fillStyle = T.danger;
     ctx.beginPath();
     ctx.arc(curX, curY, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = T.surface;
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -752,7 +628,7 @@ function drawPHCurve(cx, cy, cw, ch) {
     if (volumeAdded >= eqVol - 0.5) {
         const eqPH = computePH(eqVol);
         const eqPY = cy + ch - (eqPH / 14) * ch;
-        ctx.fillStyle = '#2d7d46';
+        ctx.fillStyle = T.success;
         ctx.beginPath();
         ctx.arc(eqX, eqPY, 4, 0, Math.PI * 2);
         ctx.fill();
@@ -769,7 +645,7 @@ document.getElementById('dripDown').addEventListener('click', () => {
     updateUI();
 });
 
-document.querySelectorAll('.titr-quick-btn').forEach(btn => {
+document.querySelectorAll('.sim-chip').forEach(btn => {
     btn.addEventListener('click', () => {
         const amt = parseFloat(btn.dataset.amt);
         volumeAdded = Math.min(volumeAdded + amt, 100);
@@ -782,10 +658,10 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     updateUI();
 });
 
-document.querySelectorAll('.titr-scen-btn').forEach(btn => {
+document.querySelectorAll('.sim-seg__btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.titr-scen-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        document.querySelectorAll('.sim-seg__btn').forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
         scenario = btn.dataset.scen;
         volumeAdded = 0;
 
@@ -830,29 +706,23 @@ function updateUI() {
     document.getElementById('volumeAdded').textContent = volumeAdded.toFixed(2);
 }
 
-// ── roundRect polyfill ──
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
-        r = typeof r === 'number' ? r : (r || 0);
-        this.moveTo(x + r, y); this.lineTo(x + w - r, y);
-        this.quadraticCurveTo(x + w, y, x + w, y + r); this.lineTo(x + w, y + h - r);
-        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h); this.lineTo(x + r, y + h);
-        this.quadraticCurveTo(x, y + h, x, y + h - r); this.lineTo(x, y + r);
-        this.quadraticCurveTo(x, y, x + r, y);
-    };
-}
-
-// ═══ Animation ═══
-let animId;
-function tick() {
-    draw();
-    animId = requestAnimationFrame(tick);
-}
+// ═══ Animation (SimLib) ═══
+// The scene is drawn in a fixed 700x480 logical space; SimLib maps it onto
+// the responsive (HiDPI-aware) displayed canvas so nothing is clipped.
 
 updateUI();
-animId = requestAnimationFrame(tick);
 
-window.addEventListener('beforeunload', () => { if (animId) cancelAnimationFrame(animId); });
+const app = SimLib.attach({
+    canvas: canvas,
+    logicalWidth: 700,
+    logicalHeight: 480,
+    SimulationClass: class TitrationSim extends SimLib.Simulation {
+        onResize() { draw(); }
+        onTick() { /* no physics required each tick */ }
+        onDraw(ctx) { draw(); }
+    }
+});
+app.sim.start();
 </script>
 </body>
 </html>
