@@ -538,6 +538,7 @@ a {
 .sim-readout--highlight { background: var(--sim-accent-soft); }
 .sim-readout--highlight .sim-readout__value { color: var(--sim-accent); }
 .sim-readout--warn .sim-readout__value { color: var(--sim-danger); }
+.sim-readout--success .sim-readout__value { color: var(--sim-success); }
 
 /* Buttons -------------------------------------------------------- */
 .sim-btn {

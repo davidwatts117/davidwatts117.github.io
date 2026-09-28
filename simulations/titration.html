@@ -52,6 +52,11 @@
             margin-top: 0.75rem;
         }
         .titr-btn-row .sim-btn { flex: 1; }
+
+        #pHToggle { margin-top: 0.5rem; }
+
+        /* The pH readout row is hidden until "Show pH" is switched on. */
+        #phReadouts[hidden] { display: none; }
     </style>
 </head>
 <body>
@@ -122,9 +127,32 @@
 
                     <p class="titr-hint" id="phaseHint"></p>
 
+                    <!-- pH instrumentation: off by default so the endpoint has
+                         to be judged from the indicator colour, as in a real lab. -->
                     <div class="titr-btn-row">
                         <button class="sim-btn sim-btn--outline" id="resetBtn">&#8635; New Sample</button>
                         <button class="sim-btn sim-btn--soft" id="revealBtn">? Reveal Answer</button>
+                    </div>
+
+                    <button class="sim-btn sim-btn--outline sim-btn--block"
+                            id="pHToggle" aria-pressed="false"
+                            title="Show the pH meter, pH curve and pH scale">
+                        Show pH
+                    </button>
+
+                    <div class="sim-readouts sim-readouts--3" id="phReadouts" hidden>
+                        <div class="sim-readout sim-readout--highlight">
+                            <div class="sim-readout__value" id="phReadout">1.00</div>
+                            <div class="sim-readout__label">pH</div>
+                        </div>
+                        <div class="sim-readout sim-readout--success">
+                            <div class="sim-readout__value" id="equivVol">25.0</div>
+                            <div class="sim-readout__label">Equiv. Vol (mL)</div>
+                        </div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="equivPH">7.00</div>
+                            <div class="sim-readout__label">pH at Equiv.</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -167,10 +195,15 @@
                 <div class="equation-card">
                     <h3>Reading the Flask</h3>
                     <p class="eq-explanation">
-                        There is deliberately <strong>no pH meter</strong> here. In a real lab you
-                        cannot see the pH &mdash; the only evidence is the
+                        There is deliberately <strong>no pH meter</strong> by default. In a real lab
+                        you cannot see the pH &mdash; the only evidence is the
                         <strong>colour of the indicator in the flask</strong>, and your titre is
                         whatever reading you had when the colour changed.
+                    </p>
+                    <p class="eq-explanation" style="margin-top:0.5rem;">
+                        <strong>Show pH</strong> turns on the meter, the titration curve and the pH
+                        scale if you want to watch the chemistry instead. Bear in mind that it
+                        hands you the endpoint you would otherwise have to find.
                     </p>
                 </div>
             </aside>
@@ -207,6 +240,7 @@ let acidVol = 25.0;     // mL (analyte in flask)
 let baseConc = 0.1;     // M (titrant in burette)
 let volumeAdded = 0.0;  // mL of base added
 let showAnswer = false; // reveal the "unknown" analyte concentration
+let showPH = false;     // show pH instrumentation (off by default)
 
 // Indicator
 let indicator = 'phenolphthalein';
@@ -308,8 +342,17 @@ function draw() {
     const labW = 280;
     drawLabApparatus(labW);
 
-    // ── Burette reading panel (the only numeric evidence) ──
-    drawBurettePanel(W - 150, 40, 130, 150);
+    // ── Right side: either the pH curve, or the burette reading panel ──
+    // They are mutually exclusive: the pH curve claims the same space, and
+    // showing it already hands over the pH the exercise is meant to hide.
+    if (showPH) {
+        const curveX = labW + 20, curveY = 30;
+        const curveW = W - curveX - 15, curveH = H - 60;
+        drawPHCurve(curveX, curveY, curveW, curveH);
+        drawPHBar(curveX, H - 20, curveW);
+    } else {
+        drawBurettePanel(W - 150, 40, 130, 150);
+    }
 }
 
 function drawLabApparatus(labW) {
@@ -459,6 +502,37 @@ function drawLabApparatus(labW) {
         );
     }
 
+    // ── pH meter (only when pH instrumentation is switched on) ──
+    if (showPH) {
+        const pHMeterX = flaskCX + flaskW / 2 + 20, pHMeterY = flaskTop;
+        ctx.fillStyle = T.surface2;
+        ctx.strokeStyle = T.ink;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(pHMeterX, pHMeterY, 50, 70, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = T.ink;
+        ctx.font = T.font(18, 'bold');
+        ctx.textAlign = 'center';
+        ctx.fillText(pH.toFixed(2), pHMeterX + 25, pHMeterY + 32);
+        ctx.fillStyle = T.muted;
+        ctx.font = T.font(9, 'bold');
+        ctx.fillText('pH', pHMeterX + 25, pHMeterY + 50);
+        // Probe wire
+        ctx.strokeStyle = T.faint;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pHMeterX, pHMeterY + 15);
+        ctx.quadraticCurveTo(flaskCX, flaskTop - 20, flaskCX, flaskTop + 5);
+        ctx.stroke();
+        // Probe tip in flask
+        ctx.fillStyle = T.ink;
+        ctx.beginPath();
+        ctx.arc(flaskCX, flaskTop + 10, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
     // Magnetic stirrer
     // Offset down so it never collides with the reveal caption.
     const stirY = flaskBottom + (showAnswer ? 60 : 48);
@@ -498,9 +572,182 @@ function getIndicatorColor(pH) {
     return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
+/** Horizontal pH scale with a marker at the current pH. */
+function drawPHBar(x, y, w) {
+    const barH = 14;
+    const pH = computePH(volumeAdded);
+
+    // Gradient bar from pH 0 (red) to pH 14 (blue)
+    const barGrad = ctx.createLinearGradient(x, 0, x + w, 0);
+    for (let i = 0; i <= 14; i++) {
+        const t = i / 14;
+        let r, g, B;
+        if (t < 0.5) {
+            // Red to yellow
+            const tt = t * 2;
+            r = 220; g = Math.round(50 + tt * 180); B = Math.round(50 - tt * 20);
+        } else {
+            // Yellow to blue
+            const tt = (t - 0.5) * 2;
+            r = Math.round(220 - tt * 180); g = Math.round(230 - tt * 160); B = Math.round(30 + tt * 150);
+        }
+        barGrad.addColorStop(t, 'rgb(' + r + ',' + g + ',' + B + ')');
+    }
+    ctx.fillStyle = barGrad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, barH, 4);
+    ctx.fill();
+
+    // Current pH indicator
+    const pHX = x + (pH / 14) * w;
+    ctx.fillStyle = T.ink;
+    ctx.beginPath();
+    ctx.moveTo(pHX, y - 6);
+    ctx.lineTo(pHX - 5, y - 2);
+    ctx.lineTo(pHX + 5, y - 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(pHX, y + barH + 6);
+    ctx.lineTo(pHX - 5, y + barH + 2);
+    ctx.lineTo(pHX + 5, y + barH + 2);
+    ctx.fill();
+
+    // pH label
+    ctx.fillStyle = T.ink;
+    ctx.font = T.font(10, 'bold');
+    ctx.textAlign = 'center';
+    ctx.fillText('pH ' + pH.toFixed(2), pHX, y - 8);
+
+    // Tick marks
+    ctx.fillStyle = T.text;
+    ctx.font = T.font(8);
+    ctx.textAlign = 'center';
+    for (let p = 0; p <= 14; p += 2) {
+        const tx = x + (p / 14) * w;
+        ctx.fillText(p, tx, y + barH + 16);
+    }
+}
+
+/** Titration curve: pH against volume of titrant added, with the endpoint marked. */
+function drawPHCurve(cx, cy, cw, ch) {
+    const eqVol = computeEquivalenceVolume();
+    const maxVol = Math.max(eqVol * 2 + 5, volumeAdded + 5);
+
+    // Axes
+    ctx.strokeStyle = T.ink;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy + ch);
+    ctx.lineTo(cx + cw, cy + ch);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = T.ink;
+    ctx.font = T.font(11, 'bold');
+    ctx.textAlign = 'center';
+    ctx.fillText('Volume of Titrant Added (mL)', cx + cw / 2, cy + ch + 30);
+    ctx.save();
+    ctx.translate(cx - 28, cy + ch / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('pH', 0, 0);
+    ctx.restore();
+
+    // Y-axis ticks
+    ctx.fillStyle = T.muted;
+    ctx.font = T.font(8);
+    ctx.textAlign = 'right';
+    for (let p = 0; p <= 14; p += 2) {
+        const y = cy + ch - (p / 14) * ch;
+        ctx.fillText(p, cx - 6, y + 3);
+        ctx.strokeStyle = T.grid;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, y);
+        ctx.lineTo(cx + cw, y);
+        ctx.stroke();
+    }
+
+    // X-axis ticks
+    ctx.fillStyle = T.muted;
+    ctx.textAlign = 'center';
+    const tickStep = maxVol > 100 ? 25 : maxVol > 50 ? 10 : 5;
+    for (let v = 0; v <= maxVol; v += tickStep) {
+        const x = cx + (v / maxVol) * cw;
+        ctx.fillText(v, x, cy + ch + 14);
+        ctx.strokeStyle = T.grid;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, cy);
+        ctx.lineTo(x, cy + ch);
+        ctx.stroke();
+    }
+
+    // Equivalence point line
+    const eqX = cx + (eqVol / maxVol) * cw;
+    ctx.strokeStyle = T.success;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(eqX, cy);
+    ctx.lineTo(eqX, cy + ch);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = T.success;
+    ctx.font = T.font(9, 'bold');
+    ctx.fillText('Equiv: ' + eqVol.toFixed(1) + ' mL', eqX, cy - 4);
+
+    // Draw pH curve
+    const points = [];
+    const numPoints = 200;
+    for (let i = 0; i <= numPoints; i++) {
+        const v = (i / numPoints) * maxVol;
+        const pH = computePH(v);
+        const px = cx + (v / maxVol) * cw;
+        const py = cy + ch - (pH / 14) * ch;
+        points.push({ x: px, y: py, pH, v });
+    }
+
+    // Fill under curve
+    ctx.fillStyle = 'rgba(74, 111, 165, 0.08)';
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, cy + ch);
+    for (const pt of points) ctx.lineTo(pt.x, pt.y);
+    ctx.lineTo(points[points.length - 1].x, cy + ch);
+    ctx.fill();
+
+    // Curve line
+    ctx.strokeStyle = T.accent;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (const pt of points) ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+
+    // Current point highlight
+    const curX = cx + (volumeAdded / maxVol) * cw;
+    const curY = cy + ch - (computePH(volumeAdded) / 14) * ch;
+    ctx.fillStyle = T.danger;
+    ctx.beginPath();
+    ctx.arc(curX, curY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = T.surface;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Equivalence point dot
+    if (volumeAdded >= eqVol - 0.5) {
+        const eqPY = cy + ch - (computePH(eqVol) / 14) * ch;
+        ctx.fillStyle = T.success;
+        ctx.beginPath();
+        ctx.arc(eqX, eqPY, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
 /**
- * The burette reading panel. This is the ONLY numeric evidence in the
- * simulation, mirroring the graduations on real glassware.
+ * The burette reading panel. Shown when pH instrumentation is OFF, where it is
+ * the only numeric evidence, mirroring the graduations on real glassware.
  */
 function drawBurettePanel(x, y, w, h) {
     SimLib.Draw.panel(ctx, x, y, w, h, { theme: T });
@@ -579,6 +826,17 @@ document.getElementById('revealBtn').addEventListener('click', () => {
     draw();
 });
 
+document.getElementById('pHToggle').addEventListener('click', () => {
+    showPH = !showPH;
+    const btn = document.getElementById('pHToggle');
+    btn.textContent = showPH ? 'Hide pH' : 'Show pH';
+    btn.setAttribute('aria-pressed', String(showPH));
+    btn.classList.toggle('is-active', showPH);
+    document.getElementById('phReadouts').hidden = !showPH;
+    updateUI();
+    draw();
+});
+
 document.getElementById('indicatorPick').addEventListener('change', (e) => {
     indicator = e.target.value;
     updateUI();
@@ -627,12 +885,19 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Guidance that never reveals how close you are. It deliberately does NOT
-// mention pH, the equivalence volume, or whether you have passed the endpoint —
-// that information is exactly what you are meant to judge from the flask colour.
+// Guidance that never reveals how close you are. With pH instrumentation off
+// it deliberately does NOT mention pH, the equivalence volume, or whether you
+// have passed the endpoint — that information is exactly what you are meant to
+// judge from the flask colour.
 function phaseHint() {
     if (volumeAdded <= 0) {
         return { cls: '', text: 'Add titrant and watch the flask colour.' };
+    }
+    if (showPH) {
+        return {
+            cls: '',
+            text: 'pH instrumentation is on, so the endpoint is visible — the curve marker shows the true equivalence volume.',
+        };
     }
     return {
         cls: '',
@@ -642,6 +907,12 @@ function phaseHint() {
 
 function updateUI() {
     document.getElementById('volumeAdded').textContent = volumeAdded.toFixed(2);
+
+    // Kept in sync even while hidden, so switching the toggle on shows
+    // correct values immediately rather than a stale frame.
+    document.getElementById('phReadout').textContent = computePH(volumeAdded).toFixed(2);
+    document.getElementById('equivVol').textContent = computeEquivalenceVolume().toFixed(1);
+    document.getElementById('equivPH').textContent = computePH(computeEquivalenceVolume()).toFixed(2);
 
     const hint = phaseHint();
     const hintEl = document.getElementById('phaseHint');
