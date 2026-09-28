@@ -4,118 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendulum Lab — CommonLab</title>
-    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, and gravity with an interactive pendulum with adjustable parameters.">
-    <link rel="stylesheet" href="../main.css">
+    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, drag and gravity with an interactive pendulum and a live energy-vs-time graph.">
+    <link rel="stylesheet" href="../main.css?v=3">
     <style>
         #pendulumCanvas { width: 100%; max-width: 700px; height: auto; aspect-ratio: 700 / 480; display: block; border-radius: 8px; background: #fafbfc; cursor: default; }
 
-        .pend-readouts {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #e9ecef;
-        }
-        .pend-readout {
-            text-align: center;
-            padding: 0.6rem 0.4rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-        .pend-readout .pr-num {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #1a1a2e;
-            font-variant-numeric: tabular-nums;
-        }
-        .pend-readout .pr-lbl {
+        .control-hint {
+            margin: -0.25rem 0 0.5rem 2.4rem;
             font-size: 0.7rem;
             color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-top: 0.15rem;
+            line-height: 1.4;
         }
-        .pend-readout.highlight .pr-num { color: #4a6fa5; }
+        .control-hint strong { color: #495057; }
 
-        .pend-button-row {
+        .energy-graph {
+            margin-top: 0.75rem;
+        }
+        .graph-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+        .graph-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .graph-legend {
             display: flex;
             gap: 0.75rem;
             flex-wrap: wrap;
-            padding-top: 0.5rem;
-            border-top: 1px solid #e9ecef;
         }
-        .pend-btn {
-            padding: 0.5rem 1.25rem;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border: none;
-            cursor: pointer;
-            transition: background 0.15s, transform 0.1s;
-            font-family: inherit;
-        }
-        .pend-btn:hover { transform: translateY(-1px); }
-        .pend-btn:active { transform: translateY(0); }
-        .pend-btn-pause { background: #4a6fa5; color: #fff; }
-        .pend-btn-pause:hover { background: #3b5d8f; }
-        .pend-btn-reset { background: #e9ecef; color: #495057; }
-        .pend-btn-reset:hover { background: #d1d5db; }
-        .pend-btn-trace { background: #f0f4fa; color: #4a6fa5; }
-        .pend-btn-trace:hover { background: #dbeafe; }
-        .pend-btn-trace.on { background: #4a6fa5; color: #fff; }
-
-        .energy-bars {
-            display: flex;
-            gap: 0.5rem;
-            padding-top: 0.5rem;
-        }
-        .energy-bar-wrap {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+        .legend-item {
+            display: inline-flex;
             align-items: center;
-            gap: 0.25rem;
-        }
-        .energy-bar-outer {
-            width: 24px;
-            height: 80px;
-            background: #e9ecef;
-            border-radius: 4px;
-            position: relative;
-            overflow: hidden;
-        }
-        .energy-bar-inner {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            border-radius: 4px;
-            transition: height 0.1s;
-        }
-        .energy-bar-inner.ke { background: linear-gradient(to top, #e05252, #f09060); }
-        .energy-bar-inner.pe { background: linear-gradient(to top, #4a6fa5, #7ba3d6); }
-        .energy-bar-lbl {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #6c757d;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .energy-bar-val {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #1a1a2e;
-        }
-        .energy-bar-total {
+            gap: 0.3rem;
             font-size: 0.68rem;
-            color: #4a6fa5;
-            font-weight: 700;
+            font-weight: 600;
+            color: #6c757d;
         }
+        .legend-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .legend-dot.ke { background: #e05252; }
+        .legend-dot.pe { background: #4a6fa5; }
+        .legend-dot.thermal { background: #d97706; }
+        .legend-dot.total { background: #22c55e; }
 
-        @media (max-width: 768px) {
-            .pend-readouts { grid-template-columns: repeat(2, 1fr); }
+        #energyGraphCanvas {
+            width: 100%;
+            height: 150px;
+            display: block;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
         }
     </style>
 </head>
@@ -166,6 +114,12 @@
                         <span class="control-value" id="massValue" style="min-width:72px;">1.0 kg</span>
                     </div>
                     <div class="control-row">
+                        <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">C<sub>d</sub></span>
+                        <input type="range" id="dragSlider" min="0" max="0.94" value="0.47" step="0.01">
+                        <span class="control-value" id="dragValue" style="min-width:72px;">0.47</span>
+                    </div>
+                    <p class="control-hint"><strong>Drag coefficient</strong> &mdash; 0.00 is an ideal pendulum, 0.47 is a real sphere in air, 0.94 is double air drag.</p>
+                    <div class="control-row">
                         <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">g</span>
                         <input type="range" id="gravitySlider" min="0.5" max="20.0" value="9.8" step="0.1">
                         <span class="control-value" id="gravityValue" style="min-width:72px;">9.8 m/s²</span>
@@ -176,46 +130,42 @@
                         <span class="control-value" id="angleValue" style="min-width:72px;">30&deg;</span>
                     </div>
 
-                    <div class="pend-readouts">
-                        <div class="pend-readout highlight">
-                            <div class="pr-num" id="periodReadout">2.20</div>
-                            <div class="pr-lbl">Period (s)</div>
+                    <div class="sim-readouts sim-readouts--4">
+                        <div class="sim-readout sim-readout--highlight">
+                            <div class="sim-readout__value" id="periodReadout">2.20</div>
+                            <div class="sim-readout__label">Period (s)</div>
                         </div>
-                        <div class="pend-readout">
-                            <div class="pr-num" id="freqReadout">0.45</div>
-                            <div class="pr-lbl">Frequency (Hz)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="freqReadout">0.45</div>
+                            <div class="sim-readout__label">Frequency (Hz)</div>
                         </div>
-                        <div class="pend-readout">
-                            <div class="pr-num" id="angleReadout">30.0</div>
-                            <div class="pr-lbl">Angle (&deg;)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="angleReadout">30.0</div>
+                            <div class="sim-readout__label">Angle (&deg;)</div>
                         </div>
-                        <div class="pend-readout">
-                            <div class="pr-num" id="speedReadout">0.00</div>
-                            <div class="pr-lbl">Max Speed (m/s)</div>
+                        <div class="sim-readout">
+                            <div class="sim-readout__value" id="speedReadout">0.00</div>
+                            <div class="sim-readout__label">Max Speed (m/s)</div>
                         </div>
                     </div>
 
-                    <div class="pend-button-row">
-                        <button class="pend-btn pend-btn-pause" id="pauseBtn">Pause</button>
-                        <button class="pend-btn pend-btn-reset" id="resetBtn">Reset</button>
-                        <button class="pend-btn pend-btn-trace on" id="traceBtn">Show Trace</button>
-                        <div style="flex:1"></div>
-                        <div class="energy-bars">
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">KE</div>
-                                <div class="energy-bar-outer"><div class="energy-bar-inner ke" id="keBar" style="height:0%"></div></div>
-                                <div class="energy-bar-val" id="keVal">0.00</div>
-                            </div>
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">PE</div>
-                                <div class="energy-bar-outer"><div class="energy-bar-inner pe" id="peBar" style="height:0%"></div></div>
-                                <div class="energy-bar-val" id="peVal">0.00</div>
-                            </div>
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">Tot</div>
-                                <div class="energy-bar-total" id="totalEVal">—</div>
+                    <div class="sim-actions">
+                        <button class="sim-btn sim-btn--primary" id="pauseBtn">Pause</button>
+                        <button class="sim-btn sim-btn--ghost" id="resetBtn">Reset</button>
+                        <button class="sim-btn sim-btn--soft is-active" id="traceBtn">Show Trace</button>
+                    </div>
+
+                    <div class="energy-graph">
+                        <div class="graph-header">
+                            <span class="graph-title">Energy vs. Time</span>
+                            <div class="graph-legend">
+                                <span class="legend-item"><span class="legend-dot pe"></span> P</span>
+                                <span class="legend-item"><span class="legend-dot ke"></span> K</span>
+                                <span class="legend-item"><span class="legend-dot thermal"></span> Thermal</span>
+                                <span class="legend-item"><span class="legend-dot total"></span> Total</span>
                             </div>
                         </div>
+                        <canvas id="energyGraphCanvas" width="650" height="150"></canvas>
                     </div>
                 </div>
             </div>
@@ -231,11 +181,12 @@
                     </p>
                 </div>
                 <div class="equation-card">
-                    <h3>Energy</h3>
-                    <div class="equation-formula">E = &frac12;mv² + mgh</div>
+                    <h3>Energy Dynamics</h3>
+                    <div class="equation-formula">E<sub>tot</sub> = K + P + E<sub>thermal</sub></div>
                     <p class="eq-explanation">
-                        Energy continuously converts between kinetic and potential.
-                        Total mechanical energy is conserved (assuming no damping).
+                        Energy transitions smoothly between Kinetic (K) and Potential (P). Air drag
+                        continuously dissipates mechanical energy into Thermal energy, so the Total
+                        line stays flat even as the pendulum slows.
                     </p>
                 </div>
                 <div class="equation-card">
@@ -249,9 +200,11 @@
                 <div class="equation-card">
                     <h3>Explore</h3>
                     <p class="eq-explanation">
-                        <strong>Try this:</strong> Set a large angle (&gt; 60&deg;) and watch
-                        the period readout. Compare the actual period with the small-angle
-                        formula &mdash; notice the difference!
+                        <strong>Try this:</strong> Set the drag coefficient to <strong>C<sub>d</sub> = 0.00</strong>
+                        for an ideal, non-damped pendulum and watch K and P swap forever with a flat
+                        Total line. Raise it to 0.47 (a real sphere in air) or 0.94 (twice normal
+                        air drag) to watch Thermal climb while Total stays flat &mdash; energy is
+                        conserved, just converted.
                     </p>
                     <p class="eq-explanation" style="margin-top:0.5rem;">
                         Drag the bob to change the angle. Change gravity to see how a
@@ -274,435 +227,314 @@
     </div>
 </footer>
 
-<script src="../index.js"></script>
+<script src="../index.js?v=3"></script>
+<script src="../library.js?v=3"></script>
 <script>
-'use strict';
+(() => {
+    'use strict';
 
-// ── Constants ──
-const PIVOT_X = 350, PIVOT_Y = 80;
-const PX_PER_METER = 130;
-const BOBS_PER_KG = 16;
-const DAMPING = 0.9995;
+    const canvas = document.getElementById('pendulumCanvas');
+    const graphCanvas = document.getElementById('energyGraphCanvas');
+    const T = SimLib.Theme.use('light');
 
-// ── State ──
-let length = 1.2;
-let mass = 1.0;
-let gravity = 9.8;
-let angleDeg = 30;
-let angle = angleDeg * Math.PI / 180;
-let angularVel = 0;
-let paused = false;
-let showTrace = true;
-let tracePoints = [];
-let periodTimer = 0;
-let lastSign = null;
-let measuredPeriod = null;
-let _crossingTimes = [];
+    // Physics / graph constants
+    const AIR_DENSITY = 1.225;      // kg/m^3 atmospheric air density
+    const GRAPH_WINDOW_S = 20;      // time span shown on the graph's x-axis
+    const GRAPH_TRIM_PAD_S = 1;     // extra seconds retained just off-screen
 
-// ── DOM ──
-const canvas = document.getElementById('pendulumCanvas');
-const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+    class PendulumSim extends SimLib.Simulation {
+        onInit() {
+            // constants
+            this.PIVOT_X = 350; this.PIVOT_Y = 80;
+            this.PX_PER_METER = 130; this.BOBS_PER_KG = 16;
 
-const lengthSlider  = document.getElementById('lengthSlider');
-const massSlider    = document.getElementById('massSlider');
-const gravitySlider = document.getElementById('gravitySlider');
-const angleSlider   = document.getElementById('angleSlider');
-const lengthValue   = document.getElementById('lengthValue');
-const massValue     = document.getElementById('massValue');
-const gravityValue  = document.getElementById('gravityValue');
-const angleValue    = document.getElementById('angleValue');
-const pauseBtn      = document.getElementById('pauseBtn');
-const resetBtn      = document.getElementById('resetBtn');
-const traceBtn      = document.getElementById('traceBtn');
+            // state
+            this.length = 1.2; this.mass = 1.0; this.gravity = 9.8; this.cd = 0.47;
+            this.angleDeg = 30; this.angle = this.angleDeg * Math.PI / 180; this.angularVel = 0;
+            this.thermalEnergy = 0;
+            this.paused = false; this.showTrace = true; this.tracePoints = [];
+            this.periodTimer = 0; this.lastSign = null; this.measuredPeriod = null; this._crossingTimes = [];
+            this.simTime = 0; this.energyHistory = [];
+            this._uiAccum = 0;
 
-const periodReadout = document.getElementById('periodReadout');
-const freqReadout   = document.getElementById('freqReadout');
-const angleReadout  = document.getElementById('angleReadout');
-const speedReadout  = document.getElementById('speedReadout');
-const keBar = document.getElementById('keBar');
-const peBar = document.getElementById('peBar');
-const keVal = document.getElementById('keVal');
-const peVal = document.getElementById('peVal');
-const totalEVal = document.getElementById('totalEVal');
+            // DOM refs
+            this.lengthSlider  = document.getElementById('lengthSlider');
+            this.massSlider    = document.getElementById('massSlider');
+            this.dragSlider    = document.getElementById('dragSlider');
+            this.gravitySlider = document.getElementById('gravitySlider');
+            this.angleSlider   = document.getElementById('angleSlider');
+            this.lengthValue   = document.getElementById('lengthValue');
+            this.massValue     = document.getElementById('massValue');
+            this.dragValue     = document.getElementById('dragValue');
+            this.gravityValue  = document.getElementById('gravityValue');
+            this.angleValue    = document.getElementById('angleValue');
+            this.pauseBtn      = document.getElementById('pauseBtn');
+            this.resetBtn      = document.getElementById('resetBtn');
+            this.traceBtn      = document.getElementById('traceBtn');
+            this.periodReadout = document.getElementById('periodReadout');
+            this.freqReadout   = document.getElementById('freqReadout');
+            this.angleReadout  = document.getElementById('angleReadout');
+            this.speedReadout  = document.getElementById('speedReadout');
 
-// ── Bob position ──
-function bobPos() {
-    const px = PIVOT_X + Math.sin(angle) * length * PX_PER_METER;
-    const py = PIVOT_Y + Math.cos(angle) * length * PX_PER_METER;
-    return { x: px, y: py };
-}
+            // canvas logical space (SimLib maps it onto the displayed size)
+            this.ctx = this.app.ctx;
+            this.W = this.logical.w;
+            this.H = this.logical.h;
+            this.graphCtx = graphCanvas.getContext('2d');
 
-function bobPixelRadius() {
-    return 12 + mass * BOBS_PER_KG;
-}
+            // wire controls
+            const resetPeriod = () => { this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; };
+            SimLib.UI.bindSlider(this.lengthSlider, { output: this.lengthValue, format: v => v.toFixed(2) + ' m', oninput: v => { this.length = v; resetPeriod(); } });
+            SimLib.UI.bindSlider(this.massSlider, { output: this.massValue, format: v => v.toFixed(1) + ' kg', oninput: v => { this.mass = v; } });
+            SimLib.UI.bindSlider(this.dragSlider, { output: this.dragValue, format: v => v.toFixed(2), oninput: v => { this.cd = v; } });
+            SimLib.UI.bindSlider(this.gravitySlider, { output: this.gravityValue, format: v => v.toFixed(1) + ' m/s²', oninput: v => { this.gravity = v; resetPeriod(); } });
+            SimLib.UI.bindSlider(this.angleSlider, { output: this.angleValue, format: v => v + '°', oninput: v => { this.angle = v * Math.PI / 180; this.angularVel = 0; resetPeriod(); this.tracePoints = []; this._resetEnergy(); } });
+            this.pauseBtn.addEventListener('click', () => { this.paused = !this.paused; this.pauseBtn.textContent = this.paused ? 'Resume' : 'Pause'; });
+            this.resetBtn.addEventListener('click', () => { this.angularVel = 0; const deg = +this.angleSlider.value; this.angle = deg * Math.PI / 180; this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; this.tracePoints = []; this._resetEnergy(); });
+            this.traceBtn.addEventListener('click', () => { this.showTrace = !this.showTrace; this.traceBtn.textContent = this.showTrace ? 'Show Trace' : 'Hide Trace'; this.traceBtn.classList.toggle('is-active', this.showTrace); if (!this.showTrace) this.tracePoints = []; });
 
-// ── Energy ──
-function computeEnergy() {
-    const bob = bobPos();
-    const bobBaseY = PIVOT_Y + length * PX_PER_METER;
-    const h = (bobBaseY - bob.y) / PX_PER_METER;
-    const speed = Math.abs(angularVel) * length;
-    const ke = 0.5 * mass * speed * speed;
-    const pe = mass * gravity * h;
-    return { ke, pe, total: ke + pe };
-}
+            // pointer drag
+            this.dragging = false;
+            this.canvas.addEventListener('pointerdown', (e) => {
+                const pos = this._getCanvasPos(e);
+                if (this._isNearBob(pos.x, pos.y)) {
+                    this.dragging = true; this.paused = true; this.pauseBtn.textContent = 'Resume'; this.canvas.style.cursor = 'grabbing'; this.canvas.setPointerCapture(e.pointerId); e.preventDefault();
+                }
+            });
+            this.canvas.addEventListener('pointermove', (e) => {
+                if (this.dragging) {
+                    const pos = this._getCanvasPos(e);
+                    const dx = pos.x - this.PIVOT_X; const dy = pos.y - this.PIVOT_Y; const dist = Math.sqrt(dx*dx + dy*dy);
+                    const maxDist = this.length * this.PX_PER_METER; const clampedDist = Math.min(dist, maxDist * 0.98);
+                    const newAngle = Math.atan2(dx, dy); this.angle = -newAngle; const deg = this.angle * 180 / Math.PI;
+                    this.angleSlider.value = Math.max(1, Math.min(85, Math.abs(Math.round(deg)))); this.angleValue.innerHTML = Math.abs(deg).toFixed(0) + '°'; this.angularVel = 0; this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; this.tracePoints = []; e.preventDefault();
+                } else if (!this.paused) {
+                    const pos = this._getCanvasPos(e); this.canvas.style.cursor = this._isNearBob(pos.x, pos.y) ? 'grab' : 'default';
+                }
+            });
+            this.canvas.addEventListener('pointerup', () => { this.dragging = false; this.canvas.style.cursor = 'default'; });
+            this.canvas.addEventListener('pointercancel', () => { this.dragging = false; this.canvas.style.cursor = 'default'; });
+        }
 
-// ── Period tracking using zero-crossings ──
-function trackPeriod(dt) {
-    const sign = Math.sign(angle);
-    if (lastSign !== null && sign !== 0 && sign !== lastSign) {
-        _crossingTimes.push(periodTimer);
-        if (_crossingTimes.length > 20) _crossingTimes.shift();
-        if (_crossingTimes.length >= 3) {
-            // Average of last few half-periods × 2
-            const diffs = [];
-            for (let i = 1; i < _crossingTimes.length; i += 2) {
-                if (i + 1 < _crossingTimes.length) {
-                    diffs.push((_crossingTimes[i+1] - _crossingTimes[i-1]));
+        _getCanvasPos(e) {
+            return SimLib.CanvasUtils.eventPos(this.canvas, e);
+        }
+        _isNearBob(cx, cy) { const bob = this._bobPos(); const dist = Math.hypot(cx - bob.x, cy - bob.y); return dist < this._bobPixelRadius() + 14; }
+
+        _bobPos() { const px = this.PIVOT_X + Math.sin(this.angle) * this.length * this.PX_PER_METER; const py = this.PIVOT_Y + Math.cos(this.angle) * this.length * this.PX_PER_METER; return { x: px, y: py }; }
+        _bobPixelRadius() { return 12 + this.mass * this.BOBS_PER_KG; }
+        _bobRadiusMeters() { return this._bobPixelRadius() / this.PX_PER_METER; }
+
+        /** Drop the energy history back to its initial state (angle changed / reset). */
+        _resetEnergy() {
+            this.thermalEnergy = 0;
+            this.simTime = 0;
+            this.energyHistory = [];
+        }
+
+        _computeEnergy() { const bob = this._bobPos(); const bobBaseY = this.PIVOT_Y + this.length * this.PX_PER_METER; const h = Math.max(0, (bobBaseY - bob.y) / this.PX_PER_METER); const speed = Math.abs(this.angularVel) * this.length; const ke = 0.5 * this.mass * speed * speed; const pe = this.mass * this.gravity * h; return { ke, pe, thermal: this.thermalEnergy, total: ke + pe + this.thermalEnergy }; }
+
+        _trackPeriod(dt) {
+            const sign = Math.sign(this.angle);
+            if (this.lastSign !== null && sign !== 0 && sign !== this.lastSign) {
+                this._crossingTimes.push(this.periodTimer);
+                if (this._crossingTimes.length > 20) this._crossingTimes.shift();
+                if (this._crossingTimes.length >= 3) {
+                    const diffs = [];
+                    for (let i = 1; i < this._crossingTimes.length; i += 2) {
+                        if (i + 1 < this._crossingTimes.length) diffs.push((this._crossingTimes[i+1] - this._crossingTimes[i-1]));
+                    }
+                    if (diffs.length > 0) this.measuredPeriod = diffs.reduce((a,b) => a+b, 0) / diffs.length;
                 }
             }
-            if (diffs.length > 0) {
-                measuredPeriod = diffs.reduce((a,b) => a+b, 0) / diffs.length;
+            if (sign !== 0) this.lastSign = sign;
+            this.periodTimer += dt;
+        }
+
+        onTick(dt) {
+            if (this.paused) return;
+            const subSteps = 8; const subDt = dt / subSteps;
+            const r = this._bobRadiusMeters();
+            const area = Math.PI * r * r;
+
+            for (let s = 0; s < subSteps; s++) {
+                // Quadratic air drag: F = 0.5 * rho * v^2 * Cd * A
+                const v = this.angularVel * this.length;
+                const dragForce = 0.5 * AIR_DENSITY * v * Math.abs(v) * this.cd * area;
+                const dragTorque = dragForce * this.length;
+                const angularDampingAcc = dragTorque / (this.mass * this.length * this.length);
+
+                const gravityAlpha = -(this.gravity / this.length) * Math.sin(this.angle);
+                const alpha = gravityAlpha - angularDampingAcc;
+
+                this.angularVel += alpha * subDt;
+                this.angle += this.angularVel * subDt;
+
+                // Dissipated power = drag force * velocity -> thermal
+                this.thermalEnergy += Math.abs(dragForce * v) * subDt;
             }
+
+            this._trackPeriod(dt);
+
+            if (Math.abs(this.angularVel) > 15) this.angularVel = 15 * Math.sign(this.angularVel);
+
+            // Record a sample for the energy graph
+            const e = this._computeEnergy();
+            this.simTime += dt;
+            e.t = this.simTime;
+            this.energyHistory.push(e);
+            // Trim only what has scrolled off the left edge (plus a small pad)
+            const cutoff = this.simTime - GRAPH_WINDOW_S - GRAPH_TRIM_PAD_S;
+            while (this.energyHistory.length > 2 && this.energyHistory[0].t < cutoff) {
+                this.energyHistory.shift();
+            }
+
+            // trace
+            if (this.showTrace && !this.paused && Math.abs(this.angularVel) > 0.01) {
+                const bob = this._bobPos(); this.tracePoints.push({ x: bob.x, y: bob.y });
+                const MAX_TRACE = 250; if (this.tracePoints.length > MAX_TRACE) this.tracePoints = this.tracePoints.slice(-MAX_TRACE);
+            }
+
+            // Refresh the numeric readouts at ~10 Hz
+            this._uiAccum += dt;
+            if (this._uiAccum >= 0.1) { this._uiAccum = 0; this.updateUI(); }
+        }
+
+        onDraw(ctx) {
+            const W = this.W, H = this.H;
+            ctx.clearRect(0, 0, W, H);
+            SimLib.Draw.background(ctx, W, H, T);
+            SimLib.Draw.grid(ctx, W, H, { step: 40, color: 'rgba(26, 42, 78, 0.035)', lineWidth: 1, theme: T });
+            SimLib.Draw.title(ctx, 'Pendulum', 14, 22, { size: 13, color: T.muted, theme: T });
+            // ceiling
+            ctx.fillStyle = T.text; ctx.fillRect(0, this.PIVOT_Y - 14, W, 18);
+            ctx.fillStyle = T.muted; ctx.fillRect(0, this.PIVOT_Y - 14, W, 3);
+            ctx.fillStyle = T.ink; ctx.fillRect(0, this.PIVOT_Y + 2, W, 2);
+            // reference line
+            ctx.setLineDash([4,6]); ctx.strokeStyle = T.gridStrong; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(this.PIVOT_X, this.PIVOT_Y); ctx.lineTo(this.PIVOT_X, this.PIVOT_Y + this.length * this.PX_PER_METER); ctx.stroke(); ctx.setLineDash([]);
+            // angle arc
+            if (Math.abs(this.angleDeg) > 1) {
+                const arcR = 55; ctx.strokeStyle = T.faint; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(this.PIVOT_X, this.PIVOT_Y, arcR, -Math.PI/2, -Math.PI/2 - this.angle, this.angle < 0); ctx.stroke(); const midA = -Math.PI/2 - this.angle/2; ctx.fillStyle = T.muted; ctx.font = T.font(10, 'bold'); ctx.textAlign = 'center'; ctx.fillText(Math.abs(this.angleDeg).toFixed(0) + '\u00B0', this.PIVOT_X + (arcR + 20) * Math.cos(midA), this.PIVOT_Y + (arcR + 20) * Math.sin(midA));
+            }
+            // trace
+            if (this.showTrace && this.tracePoints.length > 1) {
+                const tc = SimLib.Color.parse(T.accent);
+                ctx.strokeStyle = `rgba(${tc.r}, ${tc.g}, ${tc.b}, 0.25)`; ctx.lineWidth = 2; ctx.setLineDash([2,4]); ctx.beginPath(); for (let i = 0; i < this.tracePoints.length; i++) { i===0?ctx.moveTo(this.tracePoints[i].x,this.tracePoints[i].y):ctx.lineTo(this.tracePoints[i].x,this.tracePoints[i].y);} ctx.stroke(); ctx.setLineDash([]);
+            }
+            // string
+            const bob = this._bobPos(); ctx.strokeStyle = T.ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(this.PIVOT_X, this.PIVOT_Y); ctx.lineTo(bob.x, bob.y); ctx.stroke();
+            // pivot bolt
+            const boltGrad = ctx.createRadialGradient(this.PIVOT_X - 2, this.PIVOT_Y - 1, 1, this.PIVOT_X, this.PIVOT_Y, 9);
+            boltGrad.addColorStop(0, T.faint); boltGrad.addColorStop(0.6, T.muted); boltGrad.addColorStop(1, T.ink); ctx.fillStyle = boltGrad; ctx.beginPath(); ctx.arc(this.PIVOT_X, this.PIVOT_Y, 9, 0, Math.PI*2); ctx.fill();
+            // bob
+            const bobR = this._bobPixelRadius(); const bobGrad = ctx.createRadialGradient(bob.x - bobR*0.3, bob.y - bobR*0.35, bobR*0.05, bob.x, bob.y, bobR); bobGrad.addColorStop(0, SimLib.Color.lighten(T.accent, 0.55)); bobGrad.addColorStop(0.4, T.accent); bobGrad.addColorStop(0.7, T.accentDark); bobGrad.addColorStop(1, SimLib.Color.darken(T.accent, 0.35)); ctx.fillStyle = bobGrad; ctx.beginPath(); ctx.arc(bob.x, bob.y, bobR, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(bob.x - bobR*0.25, bob.y - bobR*0.3, bobR*0.32, 0, Math.PI*2); ctx.fill();
+            // speed indicator
+            const speed = Math.abs(this.angularVel * this.length);
+            if (speed > 0.02) { const vDir = Math.sign(this.angularVel); const dc = SimLib.Color.parse(T.danger); ctx.fillStyle = `rgba(${dc.r}, ${dc.g}, ${dc.b}, 0.75)`; ctx.font = T.font(9, 'bold'); ctx.textAlign = 'center'; ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 16); ctx.strokeStyle = `rgba(${dc.r}, ${dc.g}, ${dc.b}, 0.6)`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(bob.x - vDir * 10, bob.y); ctx.lineTo(bob.x, bob.y); ctx.stroke(); }
+            if (this.paused) { ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0,0,W,H); ctx.fillStyle = T.muted; ctx.font = T.font(24, 'bold'); ctx.textAlign = 'center'; ctx.fillText('PAUSED', W/2, H/2 + 30); }
+            this.drawEnergyGraph();
+        }
+
+        /** Energy-vs-time line graph (K, P, Thermal, Total) on the rolling window. */
+        drawEnergyGraph() {
+            const g = this.graphCtx;
+            if (!g) return;
+            const gW = graphCanvas.width, gH = graphCanvas.height;
+            g.clearRect(0, 0, gW, gH);
+            g.fillStyle = '#f8f9fa';
+            g.fillRect(0, 0, gW, gH);
+
+            const padL = 42, padR = 10, padT = 10, padB = 20;
+            const plotW = gW - padL - padR;
+            const plotH = gH - padT - padB;
+            const x0 = padL, y0 = gH - padB;
+
+            // Y ceiling from the maximum possible potential energy
+            const initialHeight = this.length * (1 - Math.cos(this.angle));
+            const maxE = Math.max(0.1, this.mass * this.gravity * Math.max(initialHeight, this.length) * 1.15);
+
+            const tNow = this.simTime;
+            const tStart = Math.max(0, tNow - GRAPH_WINDOW_S);
+
+            // Horizontal gridlines + Y labels
+            g.font = T.font(10);
+            g.textAlign = 'right';
+            g.textBaseline = 'middle';
+            for (let i = 0; i <= 4; i++) {
+                const val = (maxE / 4) * i;
+                const y = y0 - (val / maxE) * plotH;
+                g.strokeStyle = '#e9ecef';
+                g.lineWidth = 1;
+                g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + plotW, y); g.stroke();
+                g.fillStyle = '#868e96';
+                g.fillText(val.toFixed(1), x0 - 6, y);
+            }
+
+            // Vertical time ticks every 5 s
+            g.textAlign = 'center';
+            g.textBaseline = 'top';
+            for (let t = Math.ceil(tStart / 5) * 5; t <= tNow; t += 5) {
+                const x = x0 + ((t - tStart) / GRAPH_WINDOW_S) * plotW;
+                g.strokeStyle = '#f1f3f5';
+                g.beginPath(); g.moveTo(x, padT); g.lineTo(x, y0); g.stroke();
+                g.fillStyle = '#868e96';
+                g.fillText(t + 's', x, y0 + 4);
+            }
+
+            // Y axis title
+            g.save();
+            g.translate(11, padT + plotH / 2);
+            g.rotate(-Math.PI / 2);
+            SimLib.Draw.axisLabel(g, 'Energy (J)', 0, 0, { theme: T });
+            g.restore();
+
+            if (this.energyHistory.length < 2) {
+                g.fillStyle = '#adb5bd';
+                g.font = T.font(11);
+                g.textAlign = 'center';
+                g.textBaseline = 'middle';
+                g.fillText('Energy history will appear here once the pendulum is released', gW / 2, gH / 2);
+                return;
+            }
+
+            const pts = this.energyHistory.filter(p => p.t >= tStart);
+            if (pts.length < 2) return;
+
+            const plotLine = (key, color, lineWidth, dash) => {
+                g.strokeStyle = color;
+                g.lineWidth = lineWidth;
+                g.setLineDash(dash || []);
+                g.beginPath();
+                let started = false;
+                for (const p of pts) {
+                    const x = x0 + ((p.t - tStart) / GRAPH_WINDOW_S) * plotW;
+                    const val = Math.max(0, Math.min(maxE, p[key]));
+                    const y = y0 - (val / maxE) * plotH;
+                    if (!started) { g.moveTo(x, y); started = true; } else { g.lineTo(x, y); }
+                }
+                g.stroke();
+                g.setLineDash([]);
+            };
+
+            plotLine('pe', '#4a6fa5', 2);              // Potential
+            plotLine('ke', '#e05252', 2);              // Kinetic
+            plotLine('thermal', '#d97706', 2);         // Thermal dissipated by drag
+            plotLine('total', '#22c55e', 1.5, [5, 4]); // Conserved total
+        }
+
+        updateUI() {
+            const deg = this.angle * 180 / Math.PI; this.angleDeg = deg; const speed = Math.abs(this.angularVel * this.length);
+            let period; if (this.measuredPeriod !== null) period = this.measuredPeriod; else period = 2 * Math.PI * Math.sqrt(this.length / this.gravity);
+            const freq = 1 / period;
+            this.periodReadout.textContent = period.toFixed(2); this.freqReadout.textContent = freq.toFixed(2); this.angleReadout.textContent = Math.abs(deg).toFixed(1); this.speedReadout.textContent = speed.toFixed(2);
         }
     }
-    if (sign !== 0) lastSign = sign;
-    periodTimer += dt;
-}
 
-// ── Physics ──
-function updatePhysics(dt) {
-    if (paused) return;
+    // attach and start
+    const app = SimLib.attach({ canvas, logicalWidth: 700, logicalHeight: 480, SimulationClass: PendulumSim });
+    app.sim.start();
 
-    // RK4-style: sub-step for accuracy
-    const subSteps = 4;
-    const subDt = dt / subSteps;
-
-    for (let s = 0; s < subSteps; s++) {
-        const alpha = -(gravity / length) * Math.sin(angle);
-        angularVel += alpha * subDt;
-        angularVel *= DAMPING;
-        angle += angularVel * subDt;
-    }
-
-    trackPeriod(dt);
-
-    // Clamp energy (prevent numerical runaway)
-    if (Math.abs(angularVel) > 15) angularVel = 15 * Math.sign(angularVel);
-}
-
-// ── Drawing ──
-function draw() {
-    ctx.clearRect(0, 0, W, H);
-
-    // Background
-    ctx.fillStyle = '#fafbfc';
-    ctx.fillRect(0, 0, W, H);
-
-    // Ceiling
-    ctx.fillStyle = '#6b5230';
-    ctx.fillRect(0, PIVOT_Y - 14, W, 18);
-    ctx.fillStyle = '#8b7355';
-    ctx.fillRect(0, PIVOT_Y - 14, W, 3);
-    ctx.fillStyle = '#4d3724';
-    ctx.fillRect(0, PIVOT_Y + 2, W, 2);
-
-    // Reference line (vertical at rest)
-    ctx.setLineDash([4, 6]);
-    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PIVOT_X, PIVOT_Y);
-    ctx.lineTo(PIVOT_X, PIVOT_Y + length * PX_PER_METER);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Angle arc
-    if (Math.abs(angleDeg) > 1) {
-        const arcR = 55;
-        ctx.strokeStyle = 'rgba(100,100,100,0.25)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(PIVOT_X, PIVOT_Y, arcR, -Math.PI/2, -Math.PI/2 - angle, angle < 0);
-        ctx.stroke();
-        const midA = -Math.PI/2 - angle/2;
-        ctx.fillStyle = 'rgba(80,80,80,0.4)';
-        ctx.font = 'bold 10px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(Math.abs(angleDeg).toFixed(0) + '\u00B0', PIVOT_X + (arcR + 20) * Math.cos(midA), PIVOT_Y + (arcR + 20) * Math.sin(midA));
-        // Tick marks on arc
-        for (let a = -85; a <= 85; a += 15) {
-            if (Math.abs(angleDeg) < Math.abs(a) + 3) continue;
-            const ta = -Math.PI/2 - a * Math.PI/180;
-            ctx.beginPath();
-            ctx.arc(PIVOT_X, PIVOT_Y, arcR - 5, ta - 0.02, ta + 0.02);
-            ctx.stroke();
-        }
-    }
-
-    // Trace drawn behind everything
-    if (showTrace && tracePoints.length > 1) {
-        ctx.strokeStyle = 'rgba(74, 111, 165, 0.25)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([2, 4]);
-        ctx.beginPath();
-        for (let i = 0; i < tracePoints.length; i++) {
-            i === 0 ? ctx.moveTo(tracePoints[i].x, tracePoints[i].y) : ctx.lineTo(tracePoints[i].x, tracePoints[i].y);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
-        // Fade trace dots
-        for (let i = 0; i < tracePoints.length; i += Math.max(1, Math.floor(tracePoints.length / 60))) {
-            const alpha = 0.08 + 0.22 * (i / tracePoints.length);
-            ctx.fillStyle = 'rgba(74, 111, 165, ' + alpha.toFixed(2) + ')';
-            ctx.beginPath();
-            ctx.arc(tracePoints[i].x, tracePoints[i].y, 1.8, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    // String
-    const bob = bobPos();
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(PIVOT_X, PIVOT_Y);
-    ctx.lineTo(bob.x, bob.y);
-    ctx.stroke();
-
-    // String highlight
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PIVOT_X + 1, PIVOT_Y);
-    ctx.lineTo(bob.x + 1, bob.y);
-    ctx.stroke();
-
-    // Pivot bolt
-    const boltGrad = ctx.createRadialGradient(PIVOT_X - 2, PIVOT_Y - 1, 1, PIVOT_X, PIVOT_Y, 9);
-    boltGrad.addColorStop(0, '#999');
-    boltGrad.addColorStop(0.6, '#555');
-    boltGrad.addColorStop(1, '#222');
-    ctx.fillStyle = boltGrad;
-    ctx.beginPath();
-    ctx.arc(PIVOT_X, PIVOT_Y, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.beginPath();
-    ctx.arc(PIVOT_X - 2, PIVOT_Y - 2, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bob gradient
-    const bobR = bobPixelRadius();
-    const bobGrad = ctx.createRadialGradient(bob.x - bobR*0.3, bob.y - bobR*0.35, bobR*0.05, bob.x, bob.y, bobR);
-    bobGrad.addColorStop(0, '#e8d5b7');
-    bobGrad.addColorStop(0.4, '#c4934a');
-    bobGrad.addColorStop(0.7, '#8b5e2b');
-    bobGrad.addColorStop(1, '#5a3612');
-    ctx.fillStyle = bobGrad;
-    ctx.beginPath();
-    ctx.arc(bob.x, bob.y, bobR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bob highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.beginPath();
-    ctx.arc(bob.x - bobR*0.25, bob.y - bobR*0.3, bobR*0.32, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Speed indicator (small arrow on bob)
-    const speed = Math.abs(angularVel * length);
-    if (speed > 0.02) {
-        const vDir = Math.sign(angularVel);
-        const arrowX = bob.x + vDir * (bobR + 5);
-        const arrowY = bob.y;
-        ctx.fillStyle = 'rgba(200,60,60,0.6)';
-        ctx.font = 'bold 9px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 16);
-        // Mini arrow
-        ctx.strokeStyle = 'rgba(200,60,60,0.5)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(arrowX - vDir * 10, arrowY);
-        ctx.lineTo(arrowX, arrowY);
-        ctx.stroke();
-    }
-
-    // Pause overlay
-    if (paused) {
-        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.font = 'bold 24px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('PAUSED', W/2, H/2 + 30);
-    }
-}
-
-// ── Update UI readouts ──
-function updateUI() {
-    const deg = angle * 180 / Math.PI;
-    angleDeg = deg;
-    const speed = Math.abs(angularVel * length);
-    let period;
-    if (measuredPeriod !== null) {
-        period = measuredPeriod;
-    } else {
-        // Small-angle formula
-        period = 2 * Math.PI * Math.sqrt(length / gravity);
-    }
-    const freq = 1 / period;
-    const e = computeEnergy();
-    const maxPE = mass * gravity * length;
-
-    periodReadout.textContent = period.toFixed(2);
-    freqReadout.textContent = freq.toFixed(2);
-    angleReadout.textContent = Math.abs(deg).toFixed(1);
-    speedReadout.textContent = speed.toFixed(2);
-
-    const kePct = Math.min(100, (e.ke / maxPE) * 100);
-    const pePct = Math.min(100, (e.pe / maxPE) * 100);
-    keBar.style.height = kePct.toFixed(0) + '%';
-    peBar.style.height = pePct.toFixed(0) + '%';
-    keVal.textContent = e.ke.toFixed(3) + ' J';
-    peVal.textContent = e.pe.toFixed(3) + ' J';
-    totalEVal.textContent = e.total.toFixed(3) + ' J';
-}
-
-// ── Slider handlers ──
-lengthSlider.addEventListener('input', () => {
-    length = +lengthSlider.value;
-    lengthValue.textContent = length.toFixed(2) + ' m';
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-});
-massSlider.addEventListener('input', () => {
-    mass = +massSlider.value;
-    massValue.textContent = mass.toFixed(1) + ' kg';
-});
-gravitySlider.addEventListener('input', () => {
-    gravity = +gravitySlider.value;
-    gravityValue.textContent = gravity.toFixed(1) + ' m/s\u00B2';
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-});
-angleSlider.addEventListener('input', () => {
-    const deg = +angleSlider.value;
-    angle = deg * Math.PI / 180;
-    angleValue.innerHTML = deg + '&deg;';
-    angularVel = 0;
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-    tracePoints = [];
-});
-
-pauseBtn.addEventListener('click', () => {
-    paused = !paused;
-    pauseBtn.textContent = paused ? 'Resume' : 'Pause';
-});
-resetBtn.addEventListener('click', () => {
-    angularVel = 0;
-    const deg = +angleSlider.value;
-    angle = deg * Math.PI / 180;
-    _crossingTimes = []; measuredPeriod = null; periodTimer = 0; lastSign = null;
-    tracePoints = [];
-});
-traceBtn.addEventListener('click', () => {
-    showTrace = !showTrace;
-    traceBtn.textContent = showTrace ? 'Show Trace' : 'Hide Trace';
-    traceBtn.classList.toggle('on', showTrace);
-    if (!showTrace) tracePoints = [];
-});
-
-// ── Bob drag (mouse) ──
-let dragging = false;
-function getCanvasPos(e) {
-    const r = canvas.getBoundingClientRect();
-    return {
-        x: (e.clientX - r.left) * (W / r.width),
-        y: (e.clientY - r.top) * (H / r.height)
-    };
-}
-function isNearBob(cx, cy) {
-    const bob = bobPos();
-    const dist = Math.sqrt((cx - bob.x)*(cx - bob.x) + (cy - bob.y)*(cy - bob.y));
-    return dist < bobPixelRadius() + 14;
-}
-
-canvas.addEventListener('pointerdown', (e) => {
-    const pos = getCanvasPos(e);
-    if (isNearBob(pos.x, pos.y)) {
-        dragging = true;
-        paused = true;
-        pauseBtn.textContent = 'Resume';
-        canvas.style.cursor = 'grabbing';
-        canvas.setPointerCapture(e.pointerId);
-        e.preventDefault();
-    }
-});
-canvas.addEventListener('pointermove', (e) => {
-    if (dragging) {
-        const pos = getCanvasPos(e);
-        const dx = pos.x - PIVOT_X;
-        const dy = pos.y - PIVOT_Y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        // Clamp to roughly the string length
-        const maxDist = length * PX_PER_METER;
-        const clampedDist = Math.min(dist, maxDist * 0.98);
-        const newAngle = Math.atan2(dx, dy);
-        angle = -newAngle;
-        const deg = angle * 180 / Math.PI;
-        angleSlider.value = Math.max(1, Math.min(85, Math.abs(Math.round(deg))));
-        angleValue.innerHTML = Math.abs(deg).toFixed(0) + '&deg;';
-        angularVel = 0;
-        _crossingTimes = [];
-        measuredPeriod = null;
-        periodTimer = 0;
-        lastSign = null;
-        tracePoints = [];
-        e.preventDefault();
-    } else if (!paused) {
-        const pos = getCanvasPos(e);
-        canvas.style.cursor = isNearBob(pos.x, pos.y) ? 'grab' : 'default';
-    }
-});
-canvas.addEventListener('pointerup', () => {
-    dragging = false;
-    canvas.style.cursor = 'default';
-});
-canvas.addEventListener('pointercancel', () => {
-    dragging = false;
-    canvas.style.cursor = 'default';
-});
-
-// ── Animation ──
-let lastTime = 0, animId = null;
-const MAX_TRACE = 250;
-
-function tick(ts) {
-    if (!lastTime) lastTime = ts;
-    let dt = (ts - lastTime) / 1000;
-    lastTime = ts;
-    if (dt > 0.05) dt = 0.016;
-
-    updatePhysics(dt);
-
-    // Record trace point (slightly filter: every 3rd frame)
-    if (showTrace && !paused && Math.abs(angularVel) > 0.01) {
-        const bob = bobPos();
-        tracePoints.push({ x: bob.x, y: bob.y });
-        if (tracePoints.length > MAX_TRACE) tracePoints = tracePoints.slice(-MAX_TRACE);
-    }
-
-    draw();
-    updateUI();
-    animId = requestAnimationFrame(tick);
-}
-
-// ── Init ──
-updateUI();
-animId = requestAnimationFrame(tick);
-
-window.addEventListener('beforeunload', () => { if (animId) cancelAnimationFrame(animId); });
+})();
 </script>
 </body>
 </html>

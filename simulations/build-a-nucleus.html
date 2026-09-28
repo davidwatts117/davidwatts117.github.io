@@ -5,41 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Build a Nucleus — CommonLab</title>
     <meta name="description" content="Build atomic nuclei by adding protons and neutrons. Explore stability, isotopes, and the chart of nuclides.">
-    <link rel="stylesheet" href="../main.css">
+    <link rel="stylesheet" href="../main.css?v=3">
     <style>
         #nucleusCanvas { width: 100%; max-width: 600px; height: auto; aspect-ratio: 1/1; display: block; border-radius: 8px; background: #0d1117; cursor: default; }
 
-        .build-controls { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; justify-content: center; }
-        .build-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #d1d5db; background: #fff; font-size: 1.3rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .build-btn:hover { border-color: #4a6fa5; background: #eef3fa; }
-        .build-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .build-btn.proton { color: #dc2626; }
-        .build-btn.neutron { color: #6b7280; }
-        .build-label { font-size: 0.85rem; font-weight: 600; color: #555; min-width: 60px; text-align: center; }
-
-        .nucleus-info-bar { margin-top: 0.8rem; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; padding: 0.6rem 0.8rem; background: #f8f9fa; border-radius: 8px; }
-        .ni-header { display: flex; align-items: center; gap: 0.5rem; }
-        .ni-name { font-size: 1.4rem; font-weight: 800; color: #1a1a2e; }
-        .ni-symbol { font-size: 1.1rem; color: #888; font-weight: 600; }
-        .ni-props { display: flex; gap: 0.6rem; }
         .ni-halflife { display: flex; flex-direction: column; align-items: center; min-width: 140px; }
         .ni-hl-val { font-size: 1rem; font-weight: 800; color: #1a1a2e; text-align: center; }
-        .ni-desc { font-size: 0.72rem; color: #999; margin: 0; }
-        .ni-item { text-align: center; padding: 0.3rem 0.5rem; background: #fff; border-radius: 6px; min-width: 56px; }
-        .ni-item .ni-val { font-size: 1.1rem; font-weight: 800; color: #1a1a2e; }
-        .ni-item .ni-lbl { font-size: 0.6rem; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-
-        .stability-badge { display: inline-block; padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.04em; }
-        .stability-badge.stable { background: #d1fae5; color: #065f46; }
-        .stability-badge.unstable { background: #fef3c7; color: #b45309; }
-        .stability-badge.radioactive { background: #fee2e2; color: #991b1b; }
-        .stability-badge.impossible { background: #f3f4f6; color: #9ca3af; }
 
         .sim-layout { grid-template-columns: 1fr; max-width: 700px; margin: 0 auto; }
         .sim-main { max-width: 100%; }
-
-        .chart-cell { cursor: pointer; transition: opacity 0.15s; }
-        .chart-cell:hover { opacity: 0.7; }
 
         .warn-msg { font-size: 0.78rem; color: #ef4444; text-align: center; margin-top: 0.25rem; min-height: 1.2em; }
 
@@ -73,30 +47,30 @@
                 <div class="canvas-wrapper"><canvas id="nucleusCanvas" width="600" height="600"></canvas></div>
 
                 <div class="controls-panel">
-                    <div class="build-controls">
-                        <button class="build-btn proton" id="btnProtonMinus" title="Remove proton">−</button>
-                        <span class="build-label"><span style="color:#dc2626;font-weight:800;">●</span> Protons: <strong id="protonCount">6</strong></span>
-                        <button class="build-btn proton" id="btnProtonPlus" title="Add proton">+</button>
+                    <div class="sim-stepper">
+                        <button class="sim-iconbtn sim-iconbtn--proton" id="btnProtonMinus" title="Remove proton">−</button>
+                        <span class="sim-stepper__display"><span style="color:#dc2626;font-weight:800;">●</span> Protons: <strong id="protonCount">6</strong></span>
+                        <button class="sim-iconbtn sim-iconbtn--proton" id="btnProtonPlus" title="Add proton">+</button>
                     </div>
-                    <div class="build-controls">
-                        <button class="build-btn neutron" id="btnNeutronMinus" title="Remove neutron">−</button>
-                        <span class="build-label"><span style="color:#6b7280;font-weight:800;">●</span> Neutrons: <strong id="neutronCount">6</strong></span>
-                        <button class="build-btn neutron" id="btnNeutronPlus" title="Add neutron">+</button>
+                    <div class="sim-stepper">
+                        <button class="sim-iconbtn sim-iconbtn--neutron" id="btnNeutronMinus" title="Remove neutron">−</button>
+                        <span class="sim-stepper__display"><span style="color:#6b7280;font-weight:800;">●</span> Neutrons: <strong id="neutronCount">6</strong></span>
+                        <button class="sim-iconbtn sim-iconbtn--neutron" id="btnNeutronPlus" title="Add neutron">+</button>
                     </div>
                     <div class="warn-msg" id="warnMsg"></div>
                 </div>
 
-                <div class="nucleus-info-bar">
-                    <div class="ni-header">
-                        <span class="ni-name" id="elementName">Carbon</span>
-                        <span class="ni-symbol" id="isotopeNotation">¹²C</span>
+                <div class="sim-infobar">
+                    <div class="sim-infobar__header">
+                        <span class="sim-infobar__name" id="elementName">Carbon</span>
+                        <span class="sim-infobar__symbol" id="isotopeNotation">¹²C</span>
                         <span id="stabilityBadge"></span>
                     </div>
-                    <div class="ni-props">
-                        <div class="ni-item"><div class="ni-val" id="zVal">6</div><div class="ni-lbl">Protons (Z)</div></div>
-                        <div class="ni-item"><div class="ni-val" id="nVal">6</div><div class="ni-lbl">Neutrons (N)</div></div>
-                        <div class="ni-item"><div class="ni-val" id="aVal">12</div><div class="ni-lbl">Mass (A)</div></div>
-                        <div class="ni-item"><div class="ni-val" id="ratioVal">1.00</div><div class="ni-lbl">N/Z Ratio</div></div>
+                    <div class="sim-infobar__props">
+                        <div class="sim-infobar__item"><div class="sim-infobar__value" id="zVal">6</div><div class="sim-infobar__label">Protons (Z)</div></div>
+                        <div class="sim-infobar__item"><div class="sim-infobar__value" id="nVal">6</div><div class="sim-infobar__label">Neutrons (N)</div></div>
+                        <div class="sim-infobar__item"><div class="sim-infobar__value" id="aVal">12</div><div class="sim-infobar__label">Mass (A)</div></div>
+                        <div class="sim-infobar__item"><div class="sim-infobar__value" id="ratioVal">1.00</div><div class="sim-infobar__label">N/Z Ratio</div></div>
                     </div>
                     <div class="ni-halflife">
                         <span class="ni-hl-val" id="hlVal">Stable</span>
@@ -109,7 +83,7 @@
                             <span class="hl-tick">1 Gyr</span>
                         </div>
                     </div>
-                    <p class="ni-desc" id="stabilityDesc">Stable isotope.</p>
+                    <p class="sim-infobar__desc" id="stabilityDesc">Stable isotope.</p>
                 </div>
             </div>
 
@@ -132,7 +106,8 @@
 
 <footer class="site-footer"><div class="container footer-container"><p>&copy; 2026 CommonLab. Free science simulations for everyone.</p></div></footer>
 
-<script src="../index.js"></script>
+<script src="../index.js?v=3"></script>
+<script src="../library.js?v=3"></script>
 <script>
 'use strict';
 
@@ -288,6 +263,8 @@ function canExist(z,n) {
 // ═══════════════════════════════════════
 const C = document.getElementById('nucleusCanvas');
 const ctx = C.getContext('2d');
+const TNuc = SimLib.Theme.use('dark');
+const TChart = SimLib.Theme.palettes.light;
 const W = C.width, H = C.height, CX = W/2, CY = H/2;
 
 let Z = 6, N = 6;
@@ -336,12 +313,12 @@ function rebuildAll() {
 function draw() {
     ctx.clearRect(0,0,W,H);
     const grad = ctx.createRadialGradient(CX,CY,30,CX,CY,350);
-    grad.addColorStop(0,'#1a1a2e'); grad.addColorStop(1,'#0d1117');
-    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+    grad.addColorStop(0, TNuc.surface); grad.addColorStop(1, TNuc.bg);
+    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H); SimLib.Draw.title(ctx, 'Build a Nucleus', 14, 22, { size: 13, color: TNuc.muted, theme: TNuc });
 
     if (Z+N>0) {
         const stab = getStability(Z,N);
-        const gc = stab.level==='stable'?'16,185,129':stab.level==='unstable'?'245,158,11':stab.level==='impossible'?'156,163,175':'239,68,68';
+        const sRgb = SimLib.Color.parse(SimLib.Theme.status(stab.level)); const gc = sRgb.r + ',' + sRgb.g + ',' + sRgb.b;
         const gg = ctx.createRadialGradient(CX,CY,20,CX,CY,270);
         gg.addColorStop(0,'rgba('+gc+',0.10)'); gg.addColorStop(1,'transparent');
         ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
@@ -358,7 +335,7 @@ function draw() {
                 remaining -= electrons;
             }
             for (const shell of shellRadii) {
-                ctx.strokeStyle = 'rgba(100,160,220,0.25)';
+                const oRgb = SimLib.Color.parse(TNuc.accent); ctx.strokeStyle = `rgba(${oRgb.r}, ${oRgb.g}, ${oRgb.b}, 0.30)`;
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.arc(CX, CY, shell.r, 0, Math.PI*2);
@@ -369,7 +346,7 @@ function draw() {
                     const angle = (e/shell.count)*Math.PI*2 + Date.now()*0.0003;
                     const ex = CX+shell.r*Math.cos(angle);
                     const ey = CY+shell.r*Math.sin(angle);
-                    ctx.fillStyle = 'rgba(100,180,255,0.7)';
+                    const eRgb = SimLib.Color.parse(TNuc.accent); ctx.fillStyle = `rgba(${eRgb.r}, ${eRgb.g}, ${eRgb.b}, 0.85)`;
                     ctx.beginPath();
                     ctx.arc(ex, ey, dotSize, 0, Math.PI*2);
                     ctx.fill();
@@ -396,9 +373,9 @@ function draw() {
         // Main circle
         const g = ctx.createRadialGradient(p.x-r*0.3, p.y-r*0.3, r*0.05, p.x, p.y, r);
         if (p.isProton) {
-            g.addColorStop(0,'#fca5a5'); g.addColorStop(0.5,'#dc2626'); g.addColorStop(1,'#991b1b');
+            g.addColorStop(0, SimLib.Color.lighten(TNuc.danger, 0.5)); g.addColorStop(0.5, TNuc.danger); g.addColorStop(1, SimLib.Color.darken(TNuc.danger, 0.25));
         } else {
-            g.addColorStop(0,'#f3f4f6'); g.addColorStop(0.5,'#9ca3af'); g.addColorStop(1,'#4b5563');
+            g.addColorStop(0, SimLib.Color.lighten(TNuc.muted, 0.5)); g.addColorStop(0.5, TNuc.muted); g.addColorStop(1, SimLib.Color.darken(TNuc.muted, 0.25));
         }
         ctx.fillStyle=g;
         ctx.beginPath();
@@ -413,7 +390,7 @@ function draw() {
     }
 
     if (Z+N===0) {
-        ctx.fillStyle='#555'; ctx.font='18px system-ui,sans-serif'; ctx.textAlign='center';
+        ctx.fillStyle=TNuc.muted; ctx.font=TNuc.font(18); ctx.textAlign='center';
         ctx.fillText('Add protons & neutrons',CX,CY);
     }
 }
@@ -427,7 +404,7 @@ const chartCtx = chartC.getContext('2d');
 function drawChart() {
     const cw=chartC.width, ch=chartC.height;
     chartCtx.clearRect(0,0,cw,ch);
-    chartCtx.fillStyle='#fafbfc'; chartCtx.fillRect(0,0,cw,ch);
+    SimLib.Draw.background(chartCtx, cw, ch, TChart);
     const pad={l:50,r:10,t:14,b:30}, pw=cw-pad.l-pad.r, ph=ch-pad.t-pad.b;
     const maxZ=96, maxN=162;
     const cellW=pw/maxZ, cellH=ph/maxN;
@@ -436,9 +413,9 @@ function drawChart() {
     // Colour bands by half-life range. Each band = a distinct hue.
     const cellColor = (z,n) => {
         const key=z*1000+n;
-        if (STABLE.has(key)) return '#1a1a2e';
+        if (STABLE.has(key)) return TChart.ink;
         const hl=HALF_LIVES[key];
-        if (hl===undefined) return '#fafbfc';
+        if (hl===undefined) return TChart.bg;
         // Shifted thresholds: red/yellow cover more, blue only for very long-lived
         const bands=[1e-9,1e-6,1e-3,1,3600,3.156e7,3.156e10,3.156e14,Infinity];
         const hues=[250,230,210,180,140,80,40,20,0];  // blue→red (long→short)
@@ -462,11 +439,11 @@ function drawChart() {
 
     if (Z>0&&Z<=95&&N<=160) {
         const x=pad.l+Z*cellW, y=pad.t+(maxN-N)*cellH;
-        chartCtx.strokeStyle='#fff'; chartCtx.lineWidth=2;
+        chartCtx.strokeStyle=TChart.surface; chartCtx.lineWidth=2;
         chartCtx.strokeRect(x-1,y-1,cellW+2,cellH+2);
     }
 
-    chartCtx.fillStyle='#6c757d'; chartCtx.font='9px system-ui,sans-serif'; chartCtx.textAlign='center';
+    chartCtx.fillStyle=TChart.muted; chartCtx.font=TChart.font(9); chartCtx.textAlign='center';
     chartCtx.fillText('Protons (Z) →',pad.l+pw/2,ch-3);
     chartCtx.save(); chartCtx.translate(8,pad.t+ph/2); chartCtx.rotate(-Math.PI/2);
     chartCtx.fillText('Neutrons (N) →',0,0); chartCtx.restore();
@@ -502,7 +479,7 @@ function updateUI() {
     document.getElementById('ratioVal').textContent=ratio;
     document.getElementById('elementName').textContent=name;
     document.getElementById('isotopeNotation').textContent=a>0?a+sym:'—';
-    document.getElementById('stabilityBadge').innerHTML='<span class="stability-badge '+stab.level+'">'+stab.level.charAt(0).toUpperCase()+stab.level.slice(1)+'</span>';
+    document.getElementById('stabilityBadge').innerHTML='<span class="sim-badge sim-badge--'+stab.level+'">'+stab.level.charAt(0).toUpperCase()+stab.level.slice(1)+'</span>';
     document.getElementById('stabilityDesc').textContent=stab.desc;
     document.getElementById('hlVal').textContent=fmtHalfLife(hl);
 
@@ -536,6 +513,23 @@ btnPPlus.addEventListener('click',()=>{if(Z<MAX_Z&&canExist(Z+1,N)){Z++;rebuild(
 btnPMinus.addEventListener('click',()=>{if(Z>0&&canExist(Z-1,N)){Z--;rebuild();}});
 btnNPlus.addEventListener('click',()=>{if(N<MAX_N&&Z>0&&canExist(Z,N+1)){N++;rebuild();}});
 btnNMinus.addEventListener('click',()=>{if(N>0&&canExist(Z,N-1)){N--;rebuild();}});
+
+// ═══════════════════════════════════════
+//  INIT + SimLib integration
+// ═══════════════════════════════════════
+// The nucleus is drawn in a fixed 600x600 logical space; SimLib maps it onto
+// the responsive (HiDPI-aware) displayed canvas so nothing is clipped.
+const app = SimLib.attach({
+    canvas: C,
+    logicalWidth: 600,
+    logicalHeight: 600,
+    SimulationClass: class NucleusSim extends SimLib.Simulation {
+        onResize() { draw(); }
+        onTick() { /* state is driven by the controls and chart clicks */ }
+        onDraw(ctx) { draw(); }
+    }
+});
+app.sim.start();
 
 loadNuclearData().then(() => rebuild());
 setTimeout(() => { if (!dataLoaded) { loadFallbackData(); rebuild(); } }, 3000);
