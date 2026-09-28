@@ -329,10 +329,13 @@ function computePH(volAdded) {
 }
 
 // ═══ Drawing ═══
-// Deliberately NO pH meter, pH scale, or pH curve. In a real lab you cannot see
-// the pH — the only evidence is the indicator colour in the flask, and the
-// titre is whatever reading you had when the colour changed. Anything that
-// displayed a number would defeat the exercise.
+// By default there is NO pH meter, pH scale, or pH curve. In a real lab you
+// cannot see the pH — the only evidence is the indicator colour in the flask,
+// and the titre is whatever reading you had when the colour changed. Anything
+// that displayed a number would defeat the exercise.
+//
+// The "Show pH" toggle (showPH) turns all three on for anyone who would rather
+// watch the chemistry than find the endpoint by eye.
 function draw() {
     ctx.clearRect(0, 0, W, H);
     SimLib.Draw.background(ctx, W, H, T);
