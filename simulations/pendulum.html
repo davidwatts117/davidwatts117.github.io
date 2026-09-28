@@ -4,59 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendulum Lab — CommonLab</title>
-    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, and gravity with an interactive pendulum with adjustable parameters.">
+    <meta name="description" content="Interactive pendulum simulation. Explore period, amplitude, drag and gravity with an interactive pendulum and a live energy-vs-time graph.">
     <link rel="stylesheet" href="../main.css">
     <style>
         #pendulumCanvas { width: 100%; max-width: 700px; height: auto; aspect-ratio: 700 / 480; display: block; border-radius: 8px; background: #fafbfc; cursor: default; }
 
-        .energy-bars {
-            display: flex;
-            gap: 0.5rem;
-            padding-top: 0.5rem;
-        }
-        .energy-bar-wrap {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        .energy-bar-outer {
-            width: 24px;
-            height: 80px;
-            background: #e9ecef;
-            border-radius: 4px;
-            position: relative;
-            overflow: hidden;
-        }
-        .energy-bar-inner {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            border-radius: 4px;
-            transition: height 0.1s;
-        }
-        .energy-bar-inner.ke { background: linear-gradient(to top, #e05252, #f09060); }
-        .energy-bar-inner.pe { background: linear-gradient(to top, #4a6fa5, #7ba3d6); }
-        .energy-bar-lbl {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #6c757d;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .energy-bar-val {
+        .control-hint {
+            margin: -0.25rem 0 0.5rem 2.4rem;
             font-size: 0.7rem;
-            font-weight: 600;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        .control-hint strong { color: #495057; }
+
+        .energy-graph {
+            margin-top: 0.75rem;
+        }
+        .graph-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+        .graph-title {
+            font-size: 0.75rem;
+            font-weight: 700;
             color: #1a1a2e;
         }
-        .energy-bar-total {
-            font-size: 0.68rem;
-            color: #4a6fa5;
-            font-weight: 700;
+        .graph-legend {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: #6c757d;
+        }
+        .legend-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .legend-dot.ke { background: #e05252; }
+        .legend-dot.pe { background: #4a6fa5; }
+        .legend-dot.thermal { background: #d97706; }
+        .legend-dot.total { background: #22c55e; }
 
+        #energyGraphCanvas {
+            width: 100%;
+            height: 150px;
+            display: block;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -106,6 +114,12 @@
                         <span class="control-value" id="massValue" style="min-width:72px;">1.0 kg</span>
                     </div>
                     <div class="control-row">
+                        <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">C<sub>d</sub></span>
+                        <input type="range" id="dragSlider" min="0" max="0.94" value="0.47" step="0.01">
+                        <span class="control-value" id="dragValue" style="min-width:72px;">0.47</span>
+                    </div>
+                    <p class="control-hint"><strong>Drag coefficient</strong> &mdash; 0.00 is an ideal pendulum, 0.47 is a real sphere in air, 0.94 is double air drag.</p>
+                    <div class="control-row">
                         <span class="control-label" style="flex-shrink:0;min-width:14px;font-size:0.85rem;font-weight:700;color:#1a1a2e;">g</span>
                         <input type="range" id="gravitySlider" min="0.5" max="20.0" value="9.8" step="0.1">
                         <span class="control-value" id="gravityValue" style="min-width:72px;">9.8 m/s²</span>
@@ -139,23 +153,19 @@
                         <button class="sim-btn sim-btn--primary" id="pauseBtn">Pause</button>
                         <button class="sim-btn sim-btn--ghost" id="resetBtn">Reset</button>
                         <button class="sim-btn sim-btn--soft is-active" id="traceBtn">Show Trace</button>
-                        <div style="flex:1"></div>
-                        <div class="energy-bars">
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">KE</div>
-                                <div class="energy-bar-outer"><div class="energy-bar-inner ke" id="keBar" style="height:0%"></div></div>
-                                <div class="energy-bar-val" id="keVal">0.00</div>
-                            </div>
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">PE</div>
-                                <div class="energy-bar-outer"><div class="energy-bar-inner pe" id="peBar" style="height:0%"></div></div>
-                                <div class="energy-bar-val" id="peVal">0.00</div>
-                            </div>
-                            <div class="energy-bar-wrap">
-                                <div class="energy-bar-lbl">Tot</div>
-                                <div class="energy-bar-total" id="totalEVal">—</div>
+                    </div>
+
+                    <div class="energy-graph">
+                        <div class="graph-header">
+                            <span class="graph-title">Energy vs. Time</span>
+                            <div class="graph-legend">
+                                <span class="legend-item"><span class="legend-dot pe"></span> P</span>
+                                <span class="legend-item"><span class="legend-dot ke"></span> K</span>
+                                <span class="legend-item"><span class="legend-dot thermal"></span> Thermal</span>
+                                <span class="legend-item"><span class="legend-dot total"></span> Total</span>
                             </div>
                         </div>
+                        <canvas id="energyGraphCanvas" width="650" height="150"></canvas>
                     </div>
                 </div>
             </div>
@@ -171,11 +181,12 @@
                     </p>
                 </div>
                 <div class="equation-card">
-                    <h3>Energy</h3>
-                    <div class="equation-formula">E = &frac12;mv² + mgh</div>
+                    <h3>Energy Dynamics</h3>
+                    <div class="equation-formula">E<sub>tot</sub> = K + P + E<sub>thermal</sub></div>
                     <p class="eq-explanation">
-                        Energy continuously converts between kinetic and potential.
-                        Total mechanical energy is conserved (assuming no damping).
+                        Energy transitions smoothly between Kinetic (K) and Potential (P). Air drag
+                        continuously dissipates mechanical energy into Thermal energy, so the Total
+                        line stays flat even as the pendulum slows.
                     </p>
                 </div>
                 <div class="equation-card">
@@ -189,9 +200,11 @@
                 <div class="equation-card">
                     <h3>Explore</h3>
                     <p class="eq-explanation">
-                        <strong>Try this:</strong> Set a large angle (&gt; 60&deg;) and watch
-                        the period readout. Compare the actual period with the small-angle
-                        formula &mdash; notice the difference!
+                        <strong>Try this:</strong> Set the drag coefficient to <strong>C<sub>d</sub> = 0.00</strong>
+                        for an ideal, non-damped pendulum and watch K and P swap forever with a flat
+                        Total line. Raise it to 0.47 (a real sphere in air) or 0.94 (twice normal
+                        air drag) to watch Thermal climb while Total stays flat &mdash; energy is
+                        conserved, just converted.
                     </p>
                     <p class="eq-explanation" style="margin-top:0.5rem;">
                         Drag the bob to change the angle. Change gravity to see how a
@@ -221,27 +234,38 @@
     'use strict';
 
     const canvas = document.getElementById('pendulumCanvas');
+    const graphCanvas = document.getElementById('energyGraphCanvas');
     const T = SimLib.Theme.use('light');
+
+    // Physics / graph constants
+    const AIR_DENSITY = 1.225;      // kg/m^3 atmospheric air density
+    const GRAPH_WINDOW_S = 20;      // time span shown on the graph's x-axis
+    const GRAPH_TRIM_PAD_S = 1;     // extra seconds retained just off-screen
 
     class PendulumSim extends SimLib.Simulation {
         onInit() {
             // constants
             this.PIVOT_X = 350; this.PIVOT_Y = 80;
-            this.PX_PER_METER = 130; this.BOBS_PER_KG = 16; this.DAMPING = 0.9995;
+            this.PX_PER_METER = 130; this.BOBS_PER_KG = 16;
 
             // state
-            this.length = 1.2; this.mass = 1.0; this.gravity = 9.8;
+            this.length = 1.2; this.mass = 1.0; this.gravity = 9.8; this.cd = 0.47;
             this.angleDeg = 30; this.angle = this.angleDeg * Math.PI / 180; this.angularVel = 0;
+            this.thermalEnergy = 0;
             this.paused = false; this.showTrace = true; this.tracePoints = [];
             this.periodTimer = 0; this.lastSign = null; this.measuredPeriod = null; this._crossingTimes = [];
+            this.simTime = 0; this.energyHistory = [];
+            this._uiAccum = 0;
 
             // DOM refs
             this.lengthSlider  = document.getElementById('lengthSlider');
             this.massSlider    = document.getElementById('massSlider');
+            this.dragSlider    = document.getElementById('dragSlider');
             this.gravitySlider = document.getElementById('gravitySlider');
             this.angleSlider   = document.getElementById('angleSlider');
             this.lengthValue   = document.getElementById('lengthValue');
             this.massValue     = document.getElementById('massValue');
+            this.dragValue     = document.getElementById('dragValue');
             this.gravityValue  = document.getElementById('gravityValue');
             this.angleValue    = document.getElementById('angleValue');
             this.pauseBtn      = document.getElementById('pauseBtn');
@@ -251,25 +275,22 @@
             this.freqReadout   = document.getElementById('freqReadout');
             this.angleReadout  = document.getElementById('angleReadout');
             this.speedReadout  = document.getElementById('speedReadout');
-            this.keBar = document.getElementById('keBar');
-            this.peBar = document.getElementById('peBar');
-            this.keVal = document.getElementById('keVal');
-            this.peVal = document.getElementById('peVal');
-            this.totalEVal = document.getElementById('totalEVal');
 
             // canvas logical space (SimLib maps it onto the displayed size)
             this.ctx = this.app.ctx;
             this.W = this.logical.w;
             this.H = this.logical.h;
+            this.graphCtx = graphCanvas.getContext('2d');
 
             // wire controls
             const resetPeriod = () => { this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; };
             SimLib.UI.bindSlider(this.lengthSlider, { output: this.lengthValue, format: v => v.toFixed(2) + ' m', oninput: v => { this.length = v; resetPeriod(); } });
             SimLib.UI.bindSlider(this.massSlider, { output: this.massValue, format: v => v.toFixed(1) + ' kg', oninput: v => { this.mass = v; } });
+            SimLib.UI.bindSlider(this.dragSlider, { output: this.dragValue, format: v => v.toFixed(2), oninput: v => { this.cd = v; } });
             SimLib.UI.bindSlider(this.gravitySlider, { output: this.gravityValue, format: v => v.toFixed(1) + ' m/s²', oninput: v => { this.gravity = v; resetPeriod(); } });
-            SimLib.UI.bindSlider(this.angleSlider, { output: this.angleValue, format: v => v + '°', oninput: v => { this.angle = v * Math.PI / 180; this.angularVel = 0; resetPeriod(); this.tracePoints = []; } });
+            SimLib.UI.bindSlider(this.angleSlider, { output: this.angleValue, format: v => v + '°', oninput: v => { this.angle = v * Math.PI / 180; this.angularVel = 0; resetPeriod(); this.tracePoints = []; this._resetEnergy(); } });
             this.pauseBtn.addEventListener('click', () => { this.paused = !this.paused; this.pauseBtn.textContent = this.paused ? 'Resume' : 'Pause'; });
-            this.resetBtn.addEventListener('click', () => { this.angularVel = 0; const deg = +this.angleSlider.value; this.angle = deg * Math.PI / 180; this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; this.tracePoints = []; });
+            this.resetBtn.addEventListener('click', () => { this.angularVel = 0; const deg = +this.angleSlider.value; this.angle = deg * Math.PI / 180; this._crossingTimes = []; this.measuredPeriod = null; this.periodTimer = 0; this.lastSign = null; this.tracePoints = []; this._resetEnergy(); });
             this.traceBtn.addEventListener('click', () => { this.showTrace = !this.showTrace; this.traceBtn.textContent = this.showTrace ? 'Show Trace' : 'Hide Trace'; this.traceBtn.classList.toggle('is-active', this.showTrace); if (!this.showTrace) this.tracePoints = []; });
 
             // pointer drag
@@ -302,8 +323,16 @@
 
         _bobPos() { const px = this.PIVOT_X + Math.sin(this.angle) * this.length * this.PX_PER_METER; const py = this.PIVOT_Y + Math.cos(this.angle) * this.length * this.PX_PER_METER; return { x: px, y: py }; }
         _bobPixelRadius() { return 12 + this.mass * this.BOBS_PER_KG; }
+        _bobRadiusMeters() { return this._bobPixelRadius() / this.PX_PER_METER; }
 
-        _computeEnergy() { const bob = this._bobPos(); const bobBaseY = this.PIVOT_Y + this.length * this.PX_PER_METER; const h = (bobBaseY - bob.y) / this.PX_PER_METER; const speed = Math.abs(this.angularVel) * this.length; const ke = 0.5 * this.mass * speed * speed; const pe = this.mass * this.gravity * h; return { ke, pe, total: ke + pe }; }
+        /** Drop the energy history back to its initial state (angle changed / reset). */
+        _resetEnergy() {
+            this.thermalEnergy = 0;
+            this.simTime = 0;
+            this.energyHistory = [];
+        }
+
+        _computeEnergy() { const bob = this._bobPos(); const bobBaseY = this.PIVOT_Y + this.length * this.PX_PER_METER; const h = Math.max(0, (bobBaseY - bob.y) / this.PX_PER_METER); const speed = Math.abs(this.angularVel) * this.length; const ke = 0.5 * this.mass * speed * speed; const pe = this.mass * this.gravity * h; return { ke, pe, thermal: this.thermalEnergy, total: ke + pe + this.thermalEnergy }; }
 
         _trackPeriod(dt) {
             const sign = Math.sign(this.angle);
@@ -324,20 +353,51 @@
 
         onTick(dt) {
             if (this.paused) return;
-            const subSteps = 4; const subDt = dt / subSteps;
+            const subSteps = 8; const subDt = dt / subSteps;
+            const r = this._bobRadiusMeters();
+            const area = Math.PI * r * r;
+
             for (let s = 0; s < subSteps; s++) {
-                const alpha = -(this.gravity / this.length) * Math.sin(this.angle);
+                // Quadratic air drag: F = 0.5 * rho * v^2 * Cd * A
+                const v = this.angularVel * this.length;
+                const dragForce = 0.5 * AIR_DENSITY * v * Math.abs(v) * this.cd * area;
+                const dragTorque = dragForce * this.length;
+                const angularDampingAcc = dragTorque / (this.mass * this.length * this.length);
+
+                const gravityAlpha = -(this.gravity / this.length) * Math.sin(this.angle);
+                const alpha = gravityAlpha - angularDampingAcc;
+
                 this.angularVel += alpha * subDt;
-                this.angularVel *= this.DAMPING;
                 this.angle += this.angularVel * subDt;
+
+                // Dissipated power = drag force * velocity -> thermal
+                this.thermalEnergy += Math.abs(dragForce * v) * subDt;
             }
+
             this._trackPeriod(dt);
+
             if (Math.abs(this.angularVel) > 15) this.angularVel = 15 * Math.sign(this.angularVel);
+
+            // Record a sample for the energy graph
+            const e = this._computeEnergy();
+            this.simTime += dt;
+            e.t = this.simTime;
+            this.energyHistory.push(e);
+            // Trim only what has scrolled off the left edge (plus a small pad)
+            const cutoff = this.simTime - GRAPH_WINDOW_S - GRAPH_TRIM_PAD_S;
+            while (this.energyHistory.length > 2 && this.energyHistory[0].t < cutoff) {
+                this.energyHistory.shift();
+            }
+
             // trace
             if (this.showTrace && !this.paused && Math.abs(this.angularVel) > 0.01) {
                 const bob = this._bobPos(); this.tracePoints.push({ x: bob.x, y: bob.y });
                 const MAX_TRACE = 250; if (this.tracePoints.length > MAX_TRACE) this.tracePoints = this.tracePoints.slice(-MAX_TRACE);
             }
+
+            // Refresh the numeric readouts at ~10 Hz
+            this._uiAccum += dt;
+            if (this._uiAccum >= 0.1) { this._uiAccum = 0; this.updateUI(); }
         }
 
         onDraw(ctx) {
@@ -372,14 +432,101 @@
             const speed = Math.abs(this.angularVel * this.length);
             if (speed > 0.02) { const vDir = Math.sign(this.angularVel); const dc = SimLib.Color.parse(T.danger); ctx.fillStyle = `rgba(${dc.r}, ${dc.g}, ${dc.b}, 0.75)`; ctx.font = T.font(9, 'bold'); ctx.textAlign = 'center'; ctx.fillText(speed.toFixed(1) + ' m/s', bob.x, bob.y + bobR + 16); ctx.strokeStyle = `rgba(${dc.r}, ${dc.g}, ${dc.b}, 0.6)`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(bob.x - vDir * 10, bob.y); ctx.lineTo(bob.x, bob.y); ctx.stroke(); }
             if (this.paused) { ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0,0,W,H); ctx.fillStyle = T.muted; ctx.font = T.font(24, 'bold'); ctx.textAlign = 'center'; ctx.fillText('PAUSED', W/2, H/2 + 30); }
+            this.drawEnergyGraph();
+        }
+
+        /** Energy-vs-time line graph (K, P, Thermal, Total) on the rolling window. */
+        drawEnergyGraph() {
+            const g = this.graphCtx;
+            if (!g) return;
+            const gW = graphCanvas.width, gH = graphCanvas.height;
+            g.clearRect(0, 0, gW, gH);
+            g.fillStyle = '#f8f9fa';
+            g.fillRect(0, 0, gW, gH);
+
+            const padL = 42, padR = 10, padT = 10, padB = 20;
+            const plotW = gW - padL - padR;
+            const plotH = gH - padT - padB;
+            const x0 = padL, y0 = gH - padB;
+
+            // Y ceiling from the maximum possible potential energy
+            const initialHeight = this.length * (1 - Math.cos(this.angle));
+            const maxE = Math.max(0.1, this.mass * this.gravity * Math.max(initialHeight, this.length) * 1.15);
+
+            const tNow = this.simTime;
+            const tStart = Math.max(0, tNow - GRAPH_WINDOW_S);
+
+            // Horizontal gridlines + Y labels
+            g.font = T.font(10);
+            g.textAlign = 'right';
+            g.textBaseline = 'middle';
+            for (let i = 0; i <= 4; i++) {
+                const val = (maxE / 4) * i;
+                const y = y0 - (val / maxE) * plotH;
+                g.strokeStyle = '#e9ecef';
+                g.lineWidth = 1;
+                g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + plotW, y); g.stroke();
+                g.fillStyle = '#868e96';
+                g.fillText(val.toFixed(1), x0 - 6, y);
+            }
+
+            // Vertical time ticks every 5 s
+            g.textAlign = 'center';
+            g.textBaseline = 'top';
+            for (let t = Math.ceil(tStart / 5) * 5; t <= tNow; t += 5) {
+                const x = x0 + ((t - tStart) / GRAPH_WINDOW_S) * plotW;
+                g.strokeStyle = '#f1f3f5';
+                g.beginPath(); g.moveTo(x, padT); g.lineTo(x, y0); g.stroke();
+                g.fillStyle = '#868e96';
+                g.fillText(t + 's', x, y0 + 4);
+            }
+
+            // Y axis title
+            g.save();
+            g.translate(11, padT + plotH / 2);
+            g.rotate(-Math.PI / 2);
+            SimLib.Draw.axisLabel(g, 'Energy (J)', 0, 0, { theme: T });
+            g.restore();
+
+            if (this.energyHistory.length < 2) {
+                g.fillStyle = '#adb5bd';
+                g.font = T.font(11);
+                g.textAlign = 'center';
+                g.textBaseline = 'middle';
+                g.fillText('Energy history will appear here once the pendulum is released', gW / 2, gH / 2);
+                return;
+            }
+
+            const pts = this.energyHistory.filter(p => p.t >= tStart);
+            if (pts.length < 2) return;
+
+            const plotLine = (key, color, lineWidth, dash) => {
+                g.strokeStyle = color;
+                g.lineWidth = lineWidth;
+                g.setLineDash(dash || []);
+                g.beginPath();
+                let started = false;
+                for (const p of pts) {
+                    const x = x0 + ((p.t - tStart) / GRAPH_WINDOW_S) * plotW;
+                    const val = Math.max(0, Math.min(maxE, p[key]));
+                    const y = y0 - (val / maxE) * plotH;
+                    if (!started) { g.moveTo(x, y); started = true; } else { g.lineTo(x, y); }
+                }
+                g.stroke();
+                g.setLineDash([]);
+            };
+
+            plotLine('pe', '#4a6fa5', 2);              // Potential
+            plotLine('ke', '#e05252', 2);              // Kinetic
+            plotLine('thermal', '#d97706', 2);         // Thermal dissipated by drag
+            plotLine('total', '#22c55e', 1.5, [5, 4]); // Conserved total
         }
 
         updateUI() {
             const deg = this.angle * 180 / Math.PI; this.angleDeg = deg; const speed = Math.abs(this.angularVel * this.length);
             let period; if (this.measuredPeriod !== null) period = this.measuredPeriod; else period = 2 * Math.PI * Math.sqrt(this.length / this.gravity);
-            const freq = 1 / period; const e = this._computeEnergy(); const maxPE = this.mass * this.gravity * this.length;
+            const freq = 1 / period;
             this.periodReadout.textContent = period.toFixed(2); this.freqReadout.textContent = freq.toFixed(2); this.angleReadout.textContent = Math.abs(deg).toFixed(1); this.speedReadout.textContent = speed.toFixed(2);
-            const kePct = Math.min(100, (e.ke / maxPE) * 100); const pePct = Math.min(100, (e.pe / maxPE) * 100); this.keBar.style.height = kePct.toFixed(0) + '%'; this.peBar.style.height = pePct.toFixed(0) + '%'; this.keVal.textContent = e.ke.toFixed(3) + ' J'; this.peVal.textContent = e.pe.toFixed(3) + ' J'; this.totalEVal.textContent = e.total.toFixed(3) + ' J';
         }
     }
 
